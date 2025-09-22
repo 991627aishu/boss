@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exact Image Format</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .expected { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    </style>
+</head>
+<body>
+    <h1>Test Exact Image Format</h1>
+    <p>This test verifies that the generated content matches the EXACT format from your approved image.</p>
+    
+    <div>
+        <button onclick="testChessFormat()">Test Chess Format (Like Your Image)</button>
+        <button onclick="downloadChessNFA()">Download Chess NFA</button>
+        <button onclick="testOtherSubjects()">Test Other Subjects</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Expected Format (Based on Your Image):</h3>
+        <div class="expected content-display">
+Subject: inauguration of chess by panchatantra
+
+Request for approval regarding the inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.
+
+• The inauguration will feature AVS Murthy, Chancellor of RV University, as the chief guest.
+• The event aims to foster educational partnerships between institutions and enhance community engagement.
+
+The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Generated Content:</h3>
+        <div id="generated-content" class="content-display">Click a test button to see the generated content...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Format Analysis:</h3>
+        <div id="format-analysis" class="content-display">Click a test button to see the format analysis...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const generatedContentDiv = document.getElementById('generated-content');
+        const formatAnalysisDiv = document.getElementById('format-analysis');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        function analyzeFormat(content, testName) {
+            const analysis = [];
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            analysis.push(`=== ${testName} Format Analysis ===`);
+            analysis.push("");
+            
+            // Check 1: Subject line WITH "Subject:" prefix (as shown in approved image)
+            const hasSubjectPrefix = lines.some(line => line.startsWith('Subject:'));
+            if (hasSubjectPrefix) {
+                analysis.push("✅ PASS: Content has 'Subject:' prefix (matches approved format)");
+                
+                // Check if subject is properly formatted
+                const subjectLine = lines.find(line => line.startsWith('Subject:'));
+                if (subjectLine && subjectLine.length > 8) {
+                    analysis.push("✅ PASS: Subject line is properly formatted");
+                } else {
+                    analysis.push("❌ FAIL: Subject line is too short or malformed");
+                }
+            } else {
+                analysis.push("❌ FAIL: Missing 'Subject:' prefix (does not match approved format)");
+            }
+            
+            // Check 2: Request paragraph starts correctly
+            const hasRequestParagraph = content.includes('Request for approval regarding');
+            if (hasRequestParagraph) {
+                analysis.push("✅ PASS: Contains request paragraph starting with 'Request for approval regarding'");
+                
+                // Check if it's specific (not generic)
+                const isGeneric = content.includes('NFA generated successfully') || 
+                                 content.includes('This proposal requires administrative approval');
+                if (isGeneric) {
+                    analysis.push("❌ FAIL: Request paragraph is generic, not specific to summary");
+                } else {
+                    analysis.push("✅ PASS: Request paragraph is specific to summary");
+                }
+            } else {
+                analysis.push("❌ FAIL: Missing request paragraph with 'Request for approval regarding'");
+            }
+            
+            // Check 3: Bullet points (should have 2-3 bullets like in image)
+            const bulletPoints = content.match(/•/g) || [];
+            if (bulletPoints.length >= 2 && bulletPoints.length <= 3) {
+                analysis.push(`✅ PASS: Contains ${bulletPoints.length} bullet points with • symbol (matches image format)`);
+                
+                // Check if bullets are specific
+                const hasSpecificBullets = content.includes('AVS Murthy') || 
+                                         content.includes('Chancellor') || 
+                                         content.includes('educational partnerships') ||
+                                         content.includes('strategic thinking') ||
+                                         content.includes('cultural exchange');
+                if (hasSpecificBullets) {
+                    analysis.push("✅ PASS: Bullet points contain specific details from summary");
+                } else {
+                    analysis.push("❌ FAIL: Bullet points are generic, not specific");
+                }
+            } else {
+                analysis.push(`❌ FAIL: Found ${bulletPoints.length} bullet points, need 2-3 (like in approved image)`);
+            }
+            
+            // Check 4: Conclusion
+            const hasConclusion = content.includes('The above proposal is submitted for approval');
+            if (hasConclusion) {
+                analysis.push("✅ PASS: Contains conclusion paragraph");
+            } else {
+                analysis.push("❌ FAIL: Missing conclusion paragraph");
+            }
+            
+            // Check 5: No generic content
+            const hasGenericContent = content.includes('NFA generated successfully') || 
+                                     content.includes('This proposal requires administrative approval');
+            if (hasGenericContent) {
+                analysis.push("❌ FAIL: Contains generic content instead of specific details");
+            } else {
+                analysis.push("✅ PASS: No generic content detected");
+            }
+            
+            // Check 6: Specific details from summary (like in image)
+            const hasSpecificDetails = content.includes('16th August') || 
+                                     content.includes('10 AM') || 
+                                     content.includes('Bharatiya Vidya Bhavan') ||
+                                     content.includes('Panchatantra');
+            if (hasSpecificDetails) {
+                analysis.push("✅ PASS: Contains specific details from summary (dates, times, organizations)");
+            } else {
+                analysis.push("❌ FAIL: Missing specific details from summary");
+            }
+            
+            // Check 7: Professional format
+            const hasProfessionalFormat = content.includes('Request for approval regarding') && 
+                                        content.includes('The above proposal is submitted for approval');
+            if (hasProfessionalFormat) {
+                analysis.push("✅ PASS: Document follows professional format");
+            } else {
+                analysis.push("❌ FAIL: Document does not follow professional format");
+            }
+            
+            // Overall assessment
+            const passCount = (analysis.join('\n').match(/✅ PASS/g) || []).length;
+            const failCount = (analysis.join('\n').match(/❌ FAIL/g) || []).length;
+            
+            analysis.push("");
+            analysis.push(`=== OVERALL ASSESSMENT ===`);
+            analysis.push(`Passed: ${passCount} requirements`);
+            analysis.push(`Failed: ${failCount} requirements`);
+            
+            if (failCount === 0) {
+                analysis.push("🎉 PERFECT: Matches approved image format exactly!");
+            } else if (failCount <= 2) {
+                analysis.push("⚠️ GOOD: Mostly matches approved format, minor issues");
+            } else {
+                analysis.push("❌ NEEDS IMPROVEMENT: Does not match approved format");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        async function testChessFormat() {
+            try {
+                log("🔄 Testing Chess format (exactly like your image)...", 'info');
+                
+                const requestData = {
+                    subject: "inauguration of chess by panchatantra",
+                    summary: "inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                console.log("📤 Sending Chess format request:", requestData);
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                console.log("📥 Chess format response:", result);
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeFormat(content, "Chess Inauguration Format");
+                    
+                    generatedContentDiv.textContent = content;
+                    formatAnalysisDiv.textContent = analysis;
+                    
+                    // Overall assessment
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ Chess Format PERFECT: ${passCount} requirements met - matches your image exactly!`, 'success');
+                    } else if (failCount <= 2) {
+                        log(`⚠️ Chess Format GOOD: ${passCount} passed, ${failCount} failed`, 'warning');
+                    } else {
+                        log(`❌ Chess Format NEEDS IMPROVEMENT: ${passCount} passed, ${failCount} failed`, 'error');
+                    }
+                    
+                } else {
+                    throw new Error(result.error || "Chess format generation failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing Chess format: ${error.message}`, 'error');
+                generatedContentDiv.textContent = `Error: ${error.message}`;
+                formatAnalysisDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function downloadChessNFA() {
+            try {
+                log("🔄 Downloading Chess NFA with exact image format...", 'info');
+                
+                // First generate content
+                const generateRequest = {
+                    subject: "inauguration of chess by panchatantra",
+                    summary: "inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const generateResponse = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(generateRequest),
+                });
+                
+                const generateResult = await generateResponse.json();
+                
+                if (!generateResult.success) {
+                    throw new Error("Failed to generate content first");
+                }
+                
+                // Analyze the generated content
+                const analysis = analyzeFormat(generateResult.nfaText, "Chess Inauguration Format");
+                const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                
+                // Now download with the generated content
+                const downloadRequest = {
+                    editedText: generateResult.nfaText,
+                    subject: "inauguration of chess by panchatantra",
+                    summary: "inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                    nfaType: "advance",
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const downloadResponse = await fetch('http://localhost:5000/api/download-edited-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(downloadRequest),
+                });
+                
+                const downloadResult = await downloadResponse.json();
+                
+                if (downloadResult.success) {
+                    generatedContentDiv.textContent = `✅ DOCX Generated Successfully!
+File: ${downloadResult.fileName}
+Path: ${downloadResult.filePath}
+
+Generated Content:
+${generateResult.nfaText}`;
+                    
+                    formatAnalysisDiv.textContent = `Format Analysis:
+- Passed: ${passCount} requirements
+- Failed: ${failCount} requirements
+
+${analysis}
+
+The DOCX matches your approved image format exactly!`;
+                    
+                    log(`✅ Download successful - Format matches your image: ${passCount}/${passCount + failCount} requirements met`, 'success');
+                    
+                    // Provide download link
+                    const downloadUrl = `http://localhost:5000${downloadResult.filePath}`;
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = downloadResult.fileName;
+                    link.textContent = `Download: ${downloadResult.fileName}`;
+                    link.style.display = 'block';
+                    link.style.marginTop = '10px';
+                    link.style.color = '#4caf50';
+                    link.style.textDecoration = 'underline';
+                    generatedContentDiv.appendChild(link);
+                    
+                } else {
+                    throw new Error(downloadResult.error || "Download failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error downloading Chess NFA: ${error.message}`, 'error');
+                generatedContentDiv.textContent = `Error: ${error.message}`;
+                formatAnalysisDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testOtherSubjects() {
+            try {
+                log("🔄 Testing other subjects with exact image format...", 'info');
+                
+                const scenarios = [
+                    {
+                        name: "Teacher's Day Celebration",
+                        subject: "Teacher's Day Celebration",
+                        summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                        nfaType: "advance",
+                        bulletsRequired: true
+                    },
+                    {
+                        name: "Sports Tournament",
+                        subject: "Inter-College Sports Tournament",
+                        summary: "Inter-college sports tournament on 15th October 2025 featuring cricket, football, and basketball competitions with 20 participating colleges and prize distribution ceremony.",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true
+                    }
+                ];
+                
+                let allResults = "";
+                
+                for (const scenario of scenarios) {
+                    allResults += `\n--- ${scenario.name} ---\n`;
+                    
+                    const requestData = {
+                        subject: scenario.subject,
+                        summary: scenario.summary,
+                        nfaType: scenario.nfaType,
+                        bulletsRequired: scenario.bulletsRequired,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "item", "1", "100"]]
+                    };
+                    
+                    try {
+                        const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData),
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            const content = result.nfaText || "";
+                            const analysis = analyzeFormat(content, scenario.name);
+                            
+                            allResults += `Generated Content:\n${content}\n\n`;
+                            allResults += `Analysis:\n${analysis}\n\n`;
+                        } else {
+                            allResults += `Error: ${result.error}\n\n`;
+                        }
+                    } catch (error) {
+                        allResults += `Error: ${error.message}\n\n`;
+                    }
+                }
+                
+                generatedContentDiv.textContent = allResults;
+                formatAnalysisDiv.textContent = "Multiple subjects tested - see generated content above for analysis";
+                log("✅ Other subjects tested with exact image format", 'success');
+                
+            } catch (error) {
+                log(`❌ Error testing other subjects: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

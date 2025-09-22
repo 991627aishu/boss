@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Bullet Points Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .preview-box {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        .success {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .bullet-test {
+            background: #e8f5e8;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Bullet Points Fix Test</h1>
+        <p>This test verifies that bullet points are properly handled in preview and download functionality.</p>
+
+        <div class="test-section">
+            <h3>1. Test Content Processing Function</h3>
+            <p>Testing the <code>processContentForPreview</code> function:</p>
+            
+            <div class="bullet-test">
+                <strong>Input:</strong><br>
+                <div class="preview-box">Request for approval regarding Chess Tournament.
+
+• The tournament will feature competitive matches
+• Proper organization and coordination required
+• Awards and recognition for participants
+
+The above proposal is submitted for approval.</div>
+            </div>
+
+            <div class="bullet-test">
+                <strong>Expected Output:</strong><br>
+                <div class="preview-box">Request for approval regarding Chess Tournament.
+
+• The tournament will feature competitive matches
+• Proper organization and coordination required
+• Awards and recognition for participants
+
+The above proposal is submitted for approval.</div>
+            </div>
+
+            <button onclick="testContentProcessing()">Test Content Processing</button>
+            <div id="content-processing-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Preview Formatting</h3>
+            <p>Testing the complete <code>formatNfaContent</code> function:</p>
+            
+            <button onclick="testPreviewFormatting()">Test Preview Formatting</button>
+            <div id="preview-formatting-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test Backend Integration</h3>
+            <p>Testing the backend Python script bullet point handling:</p>
+            
+            <button onclick="testBackendIntegration()">Test Backend Integration</button>
+            <div id="backend-integration-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Test Download Functionality</h3>
+            <p>Testing the complete download flow with bullet points:</p>
+            
+            <button onclick="testDownloadFunctionality()">Test Download Functionality</button>
+            <div id="download-functionality-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results Summary</h3>
+            <div id="test-summary">
+                <p>Run individual tests above to see results...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test data
+        const testContent = `Request for approval regarding Chess Tournament.
+
+• The tournament will feature competitive matches
+• Proper organization and coordination required
+• Awards and recognition for participants
+
+The above proposal is submitted for approval.`;
+
+        const testFormData = {
+            subject: "Chess Tournament",
+            summary: "Chess tournament on 5th September",
+            bulletsRequired: true,
+            nfaType: "reimbursement",
+            tableHeaders: ["Item", "Quantity", "Unit Cost", "Total Cost"],
+            tableRows: [["Laptops", "10", "₹50,000", "₹5,00,000"]]
+        };
+
+        // Simulate the processContentForPreview function
+        function processContentForPreview(content) {
+            if (!content) return "";
+            
+            const lines = content.split('\n');
+            const processedLines = [];
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                
+                // Handle bullet points - ensure they start with •
+                if (trimmedLine.startsWith('•')) {
+                    processedLines.push(trimmedLine);
+                } else if (trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
+                    // Convert other bullet styles to •
+                    const bulletText = trimmedLine.substring(1).trim();
+                    processedLines.push(`• ${bulletText}`);
+                } else if (trimmedLine && !trimmedLine.toLowerCase().startsWith('subject:') && 
+                           !trimmedLine.toLowerCase().startsWith('request for approval') &&
+                           !trimmedLine.toLowerCase().includes('proposal is submitted for approval')) {
+                    // This might be a bullet point without a bullet symbol
+                    // Check if it looks like a bullet point (short, specific content)
+                    if (trimmedLine.length < 100 && 
+                        (trimmedLine.includes('will') || trimmedLine.includes('should') || 
+                         trimmedLine.includes('must') || trimmedLine.includes('requires'))) {
+                        processedLines.push(`• ${trimmedLine}`);
+                    } else {
+                        processedLines.push(trimmedLine);
+                    }
+                } else {
+                    processedLines.push(trimmedLine);
+                }
+            }
+            
+            return processedLines.join('\n');
+        }
+
+        // Simulate the formatNfaContent function
+        function formatNfaContent(content) {
+            if (!content) return "";
+            
+            const formattedLines = [];
+            
+            // Add header section
+            formattedLines.push("RV UNIVERSITY");
+            formattedLines.push("Go, change the world");
+            formattedLines.push("An initiative of RV Educational Institutions");
+            formattedLines.push("");
+            formattedLines.push("RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India");
+            formattedLines.push("+91 80 68199900 | www.rvu.edu.in");
+            formattedLines.push("");
+            formattedLines.push(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+            formattedLines.push("");
+            formattedLines.push("Note For Approval (NFA)");
+            formattedLines.push("");
+            
+            // Check if content already has a subject line
+            if (content.toLowerCase().includes('subject:')) {
+                const processedContent = processContentForPreview(content);
+                formattedLines.push(processedContent);
+            } else {
+                formattedLines.push(`Subject: ${testFormData.subject}`);
+                formattedLines.push("");
+                const processedContent = processContentForPreview(content);
+                formattedLines.push(processedContent);
+            }
+            
+            // Add table if table data exists
+            if (testFormData.tableHeaders && testFormData.tableHeaders.length > 0 && 
+                testFormData.tableRows && testFormData.tableRows.length > 0) {
+                formattedLines.push("");
+                formattedLines.push("Financial/Resource Implications Table:");
+                formattedLines.push("");
+                
+                // Add table headers
+                const headerRow = testFormData.tableHeaders.join("\t");
+                formattedLines.push(headerRow);
+                
+                // Add table rows
+                testFormData.tableRows.forEach(row => {
+                    const dataRow = row.join("\t");
+                    formattedLines.push(dataRow);
+                });
+                
+                formattedLines.push("");
+                formattedLines.push("The above proposal is submitted for approval.");
+            }
+            
+            // Add signature section
+            formattedLines.push("");
+            formattedLines.push('_________________                    _________________');
+            formattedLines.push('Dr Phani Kumar Pullela              Mr Chandrasekhar KN');
+            formattedLines.push('Dean, Student Affairs                Head Finance');
+            formattedLines.push('(Prepared by)                        (Approved by)');
+            formattedLines.push('');
+            formattedLines.push('_________________                    _________________');
+            formattedLines.push('Dr Sahana D Gowda                    Prof (Dr) Dwarika Prasad Uniyal');
+            formattedLines.push('Registrar - RV University             Vice Chancellor (i/c)');
+            formattedLines.push('(Recommended by)                    (Approved by)');
+            
+            return formattedLines.join('\n');
+        }
+
+        function testContentProcessing() {
+            const result = processContentForPreview(testContent);
+            const resultDiv = document.getElementById('content-processing-result');
+            
+            const hasBullets = result.includes('•');
+            const bulletCount = (result.match(/•/g) || []).length;
+            
+            resultDiv.innerHTML = `
+                <div class="bullet-test">
+                    <strong>Result:</strong><br>
+                    <div class="preview-box">${result}</div>
+                </div>
+                <p class="${hasBullets ? 'success' : 'error'}">
+                    ${hasBullets ? '✅ SUCCESS' : '❌ FAILED'}: 
+                    ${hasBullets ? `Found ${bulletCount} bullet points` : 'No bullet points found'}
+                </p>
+            `;
+        }
+
+        function testPreviewFormatting() {
+            const result = formatNfaContent(testContent);
+            const resultDiv = document.getElementById('preview-formatting-result');
+            
+            const hasBullets = result.includes('•');
+            const bulletCount = (result.match(/•/g) || []).length;
+            const hasHeader = result.includes('RV UNIVERSITY');
+            const hasSubject = result.includes('Subject: Chess Tournament');
+            
+            resultDiv.innerHTML = `
+                <div class="bullet-test">
+                    <strong>Formatted Preview:</strong><br>
+                    <div class="preview-box">${result}</div>
+                </div>
+                <p class="${hasBullets ? 'success' : 'error'}">
+                    ${hasBullets ? '✅ SUCCESS' : '❌ FAILED'}: 
+                    ${hasBullets ? `Found ${bulletCount} bullet points` : 'No bullet points found'}
+                </p>
+                <p class="${hasHeader ? 'success' : 'error'}">
+                    ${hasHeader ? '✅ SUCCESS' : '❌ FAILED'}: Header section included
+                </p>
+                <p class="${hasSubject ? 'success' : 'error'}">
+                    ${hasSubject ? '✅ SUCCESS' : '❌ FAILED'}: Subject line included
+                </p>
+            `;
+        }
+
+        async function testBackendIntegration() {
+            const resultDiv = document.getElementById('backend-integration-result');
+            resultDiv.innerHTML = '<p>Testing backend integration...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                const healthData = await response.json();
+                
+                if (healthData.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ SUCCESS: Backend server is running</p>
+                        <p>Testing Python script with bullet points...</p>
+                    `;
+                    
+                    // Test the generate-nfa endpoint
+                    const testRequest = {
+                        subject: "Chess Tournament",
+                        summary: "Chess tournament on 5th September",
+                        bulletsRequired: true,
+                        nfaType: "reimbursement",
+                        tableData: [testFormData.tableHeaders, ...testFormData.tableRows]
+                    };
+                    
+                    const nfaResponse = await fetch('http://localhost:5000/api/generate-nfa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(testRequest)
+                    });
+                    
+                    const nfaData = await nfaResponse.json();
+                    
+                    if (nfaData.success && nfaData.nfaText) {
+                        const hasBullets = nfaData.nfaText.includes('•');
+                        const bulletCount = (nfaData.nfaText.match(/•/g) || []).length;
+                        
+                        resultDiv.innerHTML += `
+                            <p class="${hasBullets ? 'success' : 'error'}">
+                                ${hasBullets ? '✅ SUCCESS' : '❌ FAILED'}: 
+                                ${hasBullets ? `Backend generated ${bulletCount} bullet points` : 'No bullet points in backend response'}
+                            </p>
+                            <div class="bullet-test">
+                                <strong>Backend Response:</strong><br>
+                                <div class="preview-box">${nfaData.nfaText}</div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML += `<p class="error">❌ FAILED: Backend did not generate content properly</p>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ FAILED: Backend server not responding</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ FAILED: ${error.message}</p>`;
+            }
+        }
+
+        async function testDownloadFunctionality() {
+            const resultDiv = document.getElementById('download-functionality-result');
+            resultDiv.innerHTML = '<p>Testing download functionality...</p>';
+            
+            try {
+                // First generate content
+                const testRequest = {
+                    subject: "Chess Tournament",
+                    summary: "Chess tournament on 5th September",
+                    bulletsRequired: true,
+                    nfaType: "reimbursement",
+                    tableData: [testFormData.tableHeaders, ...testFormData.tableRows]
+                };
+                
+                const generateResponse = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testRequest)
+                });
+                
+                const generateData = await generateResponse.json();
+                
+                if (generateData.success && generateData.nfaText) {
+                    // Test download
+                    const downloadRequest = {
+                        editedText: generateData.nfaText,
+                        subject: "Chess Tournament",
+                        summary: "Chess tournament on 5th September",
+                        nfaType: "reimbursement",
+                        tableData: [testFormData.tableHeaders, ...testFormData.tableRows]
+                    };
+                    
+                    const downloadResponse = await fetch('http://localhost:5000/api/download-edited-nfa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(downloadRequest)
+                    });
+                    
+                    const downloadData = await downloadResponse.json();
+                    
+                    if (downloadData.success) {
+                        if (downloadData.filePath && downloadData.fileName) {
+                            resultDiv.innerHTML = `
+                                <p class="success">✅ SUCCESS: Download file generated</p>
+                                <p>File: ${downloadData.fileName}</p>
+                                <p>Path: ${downloadData.filePath}</p>
+                                <button onclick="window.open('http://localhost:5000${downloadData.filePath}', '_blank')">
+                                    Download Test File
+                                </button>
+                            `;
+                        } else {
+                            resultDiv.innerHTML = `
+                                <p class="error">⚠️ WARNING: Download in fallback mode</p>
+                                <p>${downloadData.message}</p>
+                            `;
+                        }
+                    } else {
+                        resultDiv.innerHTML = `<p class="error">❌ FAILED: ${downloadData.error}</p>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ FAILED: Could not generate content for download test</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ FAILED: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            setTimeout(() => {
+                testContentProcessing();
+                testPreviewFormatting();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Template Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+</head>
+<body>
+    <h1>🧪 Header Template Test</h1>
+    <p>This test creates a DOCX document with header image matching your exact template structure.</p>
+    
+    <button onclick="testHeaderTemplate()">Generate Header Template DOCX</button>
+    <div id="result"></div>
+
+    <script>
+        async function testHeaderTemplate() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = 'Generating header template DOCX document...';
+                
+                // Create document with exact template structure
+                const doc = new docx.Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            // Add header image first
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.ImageRun({
+                                        data: await fetch('./header.png').then(res => res.arrayBuffer()),
+                                        transformation: {
+                                            width: 400,
+                                            height: 100,
+                                        },
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.CENTER,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Date - Right aligned
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `Date: ${new Date().toLocaleDateString('en-GB')}`,
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.RIGHT,
+                                spacing: { after: 400 },
+                            }),
+                            
+                            // NFA Title - Centered
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Note For Approval (NFA)",
+                                        bold: true,
+                                        size: 28,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.CENTER,
+                                spacing: { after: 400 },
+                            }),
+                            
+                            // Subject
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Subject: ",
+                                        bold: true,
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                    new docx.TextRun({
+                                        text: "inauguration of chess by panchatantra",
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Request paragraph
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Request for approval regarding the inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Bullet points
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "• The inauguration will feature AVS Murthy, Chancellor of RV University, as the chief guest.",
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "• The event aims to foster educational partnerships between institutions and enhance community engagement.",
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.JUSTIFY,
+                                spacing: { after: 400 },
+                            }),
+                            
+                            // Table
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Financial/Resource Implications Table:",
+                                        bold: true,
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                spacing: {
+                                    before: 400,
+                                    after: 200,
+                                },
+                            }),
+                            
+                            // Create proper table
+                            new docx.Table({
+                                rows: [
+                                    // Header row
+                                    new docx.TableRow({
+                                        children: [
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "slno",
+                                                                bold: true,
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "item",
+                                                                bold: true,
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "unit",
+                                                                bold: true,
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "total",
+                                                                bold: true,
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    // Data rows
+                                    new docx.TableRow({
+                                        children: [
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "1",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "prize",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "2",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "20",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    new docx.TableRow({
+                                        children: [
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "1",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "prize",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "2",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "20",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    new docx.TableRow({
+                                        children: [
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "1",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "prize",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "2",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "20",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    new docx.TableRow({
+                                        children: [
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "60",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.CENTER,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                                width: {
+                                    size: 100,
+                                    type: docx.WidthType.PERCENTAGE,
+                                },
+                                borders: {
+                                    top: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                    bottom: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                    left: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                    right: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                    insideHorizontal: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                    insideVertical: { style: docx.BorderStyle.SINGLE, size: 1 },
+                                },
+                            }),
+                            
+                            // Conclusion
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.",
+                                        size: 24,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: docx.AlignmentType.JUSTIFY,
+                                spacing: {
+                                    before: 400,
+                                    after: 400,
+                                },
+                            }),
+                            
+                            // Template signatures - 2x2 grid
+                            new docx.Table({
+                                rows: [
+                                    // First row
+                                    new docx.TableRow({
+                                        children: [
+                                            // Left column
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "_________________",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Dr Phani Kumar Pullela",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Dean, Student Affairs",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "(Prepared by)",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 200 },
+                                                    }),
+                                                ],
+                                            }),
+                                            // Right column
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "_________________",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Mr Chandrasekhar KN",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Head Finance",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "(Approved by)",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 200 },
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    // Second row
+                                    new docx.TableRow({
+                                        children: [
+                                            // Left column
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "_________________",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Dr Sahana D Gowda",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Registrar - RV University",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "(Recommended by)",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 200 },
+                                                    }),
+                                                ],
+                                            }),
+                                            // Right column
+                                            new docx.TableCell({
+                                                children: [
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "_________________",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Prof (Dr) Dwarika Prasad Uniyal",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "Vice Chancellor (i/c)",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 100 },
+                                                    }),
+                                                    new docx.Paragraph({
+                                                        children: [
+                                                            new docx.TextRun({
+                                                                text: "(Approved by)",
+                                                                size: 20,
+                                                                font: "Arial",
+                                                            }),
+                                                        ],
+                                                        alignment: docx.AlignmentType.JUSTIFY,
+                                                        spacing: { after: 200 },
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                                width: {
+                                    size: 100,
+                                    type: docx.WidthType.PERCENTAGE,
+                                },
+                                borders: {
+                                    top: { style: docx.BorderStyle.NONE, size: 0 },
+                                    bottom: { style: docx.BorderStyle.NONE, size: 0 },
+                                    left: { style: docx.BorderStyle.NONE, size: 0 },
+                                    right: { style: docx.BorderStyle.NONE, size: 0 },
+                                    insideHorizontal: { style: docx.BorderStyle.NONE, size: 0 },
+                                    insideVertical: { style: docx.BorderStyle.NONE, size: 0 },
+                                },
+                            }),
+                        ],
+                    }],
+                });
+                
+                // Generate and download the document
+                const blob = await docx.Packer.toBlob(doc);
+                const fileName = `header_template_test_${new Date().toISOString().slice(0, 10)}.docx`;
+                
+                saveAs(blob, fileName);
+                
+                resultDiv.innerHTML = '<div class="result success">✅ Header template DOCX document generated and downloaded successfully!</div>';
+                
+            } catch (error) {
+                console.error('Error generating DOCX:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ Error generating DOCX: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('🧪 Header Template Test Page Loaded');
+            console.log('Click "Generate Header Template DOCX" to test');
+        };
+    </script>
+</body>
+</html>

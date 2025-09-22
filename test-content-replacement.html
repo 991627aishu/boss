@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Content Replacement</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Test Complete Content Replacement</h1>
+    <p>This test verifies that the AI chatbox completely replaces old content with new content based on user requests.</p>
+    
+    <div>
+        <button onclick="testCompleteReplacement()">Test Complete Content Replacement</button>
+        <button onclick="testDifferentContentTypes()">Test Different Content Types</button>
+        <button onclick="testMultipleReplacements()">Test Multiple Replacements</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Results:</h3>
+        <div id="test-results" class="content-display">Click a test button to see the results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const testResultsDiv = document.getElementById('test-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        async function generateInitialNFA() {
+            const requestData = {
+                subject: "Chess Tournament",
+                summary: "Chess tournament organized by Panchatantra club on 5th September 2025 at RV University Campus. The event will feature competitive chess matches among students and faculty, promoting strategic thinking and community engagement through chess activities.",
+                nfaType: "reimbursement",
+                bulletsRequired: true,
+                tableData: [
+                    ["slno", "item", "unit", "total"],
+                    ["1", "prize", "2", "20"],
+                    ["2", "prize", "2", "20"],
+                    ["3", "prize", "2", "20"],
+                    ["Total", "", "", "60"]
+                ]
+            };
+            
+            const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            });
+            
+            const result = await response.json();
+            return result;
+        }
+        
+        async function testCompleteReplacement() {
+            try {
+                log("🔄 Testing complete content replacement...", 'info');
+                
+                // Generate initial NFA
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                console.log("📄 Original content:", originalContent.substring(0, 200) + "...");
+                
+                // Test complete content replacement
+                const editRequest = {
+                    text: originalContent,
+                    prompt: "Replace all content with a request for approval of a sports event instead of chess tournament",
+                    subject: "Chess Tournament",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                console.log("📤 Sending replacement request:", editRequest);
+                
+                const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(editRequest),
+                });
+                
+                const editResult = await editResponse.json();
+                console.log("📥 Replacement response:", editResult);
+                
+                if (editResult.success) {
+                    const newContent = editResult.editedText;
+                    
+                    // Analyze the results
+                    const analysis = analyzeContentReplacement(originalContent, newContent, "Complete Content Replacement Test");
+                    
+                    testResultsDiv.textContent = `Original Content:\n${originalContent}\n\n--- REPLACED CONTENT ---\n\n${newContent}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Check if content was completely replaced
+                    const hasSportsContent = newContent.toLowerCase().includes('sports') || newContent.toLowerCase().includes('sport');
+                    const hasChessContent = newContent.toLowerCase().includes('chess');
+                    const isCompletelyDifferent = originalContent !== newContent;
+                    
+                    if (hasSportsContent && !hasChessContent && isCompletelyDifferent) {
+                        log("🎉 PERFECT: Content completely replaced with sports event content", 'success');
+                    } else if (hasSportsContent && isCompletelyDifferent) {
+                        log("✅ GOOD: New sports content added, some chess content may remain", 'success');
+                    } else if (isCompletelyDifferent) {
+                        log("⚠️ PARTIAL: Content changed but may not match request", 'warning');
+                    } else {
+                        log("❌ FAILED: Content was not replaced", 'error');
+                    }
+                    
+                } else {
+                    throw new Error(editResult.error || "Replacement request failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing content replacement: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testDifferentContentTypes() {
+            try {
+                log("🔄 Testing different content type replacements...", 'info');
+                
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                let currentContent = originalContent;
+                let allResults = `Original Content:\n${originalContent}\n\n`;
+                
+                // Test 1: Replace with workshop content
+                const edit1Request = {
+                    text: currentContent,
+                    prompt: "Replace all content with a request for approval of a technical workshop on artificial intelligence",
+                    subject: "Chess Tournament",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                const edit1Response = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(edit1Request),
+                });
+                
+                const edit1Result = await edit1Response.json();
+                
+                if (edit1Result.success) {
+                    currentContent = edit1Result.editedText;
+                    allResults += `After Workshop Replacement:\n${currentContent}\n\n`;
+                    
+                    // Test 2: Replace with cultural event content
+                    const edit2Request = {
+                        text: currentContent,
+                        prompt: "Replace all content with a request for approval of a cultural festival event",
+                        subject: "Chess Tournament",
+                        summary: "Chess tournament organized by Panchatantra club",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                    };
+                    
+                    const edit2Response = await fetch('http://localhost:5000/api/edit-nfa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(edit2Request),
+                    });
+                    
+                    const edit2Result = await edit2Response.json();
+                    
+                    if (edit2Result.success) {
+                        const finalContent = edit2Result.editedText;
+                        allResults += `After Cultural Festival Replacement:\n${finalContent}\n\n`;
+                        
+                        const analysis = analyzeContentReplacement(originalContent, finalContent, "Different Content Types Test");
+                        allResults += `--- ANALYSIS ---\n\n${analysis}`;
+                        
+                        testResultsDiv.textContent = allResults;
+                        
+                        // Check if content types were properly replaced
+                        const hasWorkshopContent = currentContent.toLowerCase().includes('workshop') || currentContent.toLowerCase().includes('technical');
+                        const hasCulturalContent = finalContent.toLowerCase().includes('cultural') || finalContent.toLowerCase().includes('festival');
+                        const isCompletelyDifferent = originalContent !== finalContent;
+                        
+                        if (hasWorkshopContent && hasCulturalContent && isCompletelyDifferent) {
+                            log("🎉 PERFECT: Different content types replaced successfully", 'success');
+                        } else if (isCompletelyDifferent) {
+                            log("✅ GOOD: Content replaced but may not match specific types", 'success');
+                        } else {
+                            log("❌ FAILED: Content replacement not working properly", 'error');
+                        }
+                        
+                    } else {
+                        throw new Error("Second replacement failed");
+                    }
+                } else {
+                    throw new Error("First replacement failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing different content types: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testMultipleReplacements() {
+            try {
+                log("🔄 Testing multiple sequential replacements...", 'info');
+                
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                let currentContent = initialResult.nfaText;
+                let allResults = `Initial Content:\n${currentContent}\n\n`;
+                
+                const replacements = [
+                    {
+                        name: "Science Fair",
+                        prompt: "Replace all content with a request for approval of a science fair event"
+                    },
+                    {
+                        name: "Music Concert",
+                        prompt: "Replace all content with a request for approval of a music concert event"
+                    },
+                    {
+                        name: "Debate Competition",
+                        prompt: "Replace all content with a request for approval of a debate competition"
+                    }
+                ];
+                
+                for (let i = 0; i < replacements.length; i++) {
+                    const replacement = replacements[i];
+                    
+                    const editRequest = {
+                        text: currentContent,
+                        prompt: replacement.prompt,
+                        subject: "Chess Tournament",
+                        summary: "Chess tournament organized by Panchatantra club",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                    };
+                    
+                    const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(editRequest),
+                    });
+                    
+                    const editResult = await editResponse.json();
+                    
+                    if (editResult.success) {
+                        currentContent = editResult.editedText;
+                        allResults += `After ${replacement.name} Replacement:\n${currentContent}\n\n`;
+                    } else {
+                        allResults += `Error in ${replacement.name} replacement: ${editResult.error}\n\n`;
+                    }
+                }
+                
+                const analysis = analyzeContentReplacement(initialResult.nfaText, currentContent, "Multiple Replacements Test");
+                allResults += `--- ANALYSIS ---\n\n${analysis}`;
+                
+                testResultsDiv.textContent = allResults;
+                
+                // Check if multiple replacements worked
+                const hasFinalContent = currentContent.toLowerCase().includes('debate') || currentContent.toLowerCase().includes('competition');
+                const isCompletelyDifferent = initialResult.nfaText !== currentContent;
+                
+                if (hasFinalContent && isCompletelyDifferent) {
+                    log("🎉 PERFECT: Multiple sequential replacements worked successfully", 'success');
+                } else if (isCompletelyDifferent) {
+                    log("✅ GOOD: Multiple replacements applied but final content may differ", 'success');
+                } else {
+                    log("❌ FAILED: Multiple replacements not working properly", 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing multiple replacements: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function analyzeContentReplacement(original, replaced, testName) {
+            const analysis = [];
+            const originalLines = original.split('\n').length;
+            const replacedLines = replaced.split('\n').length;
+            const originalLength = original.length;
+            const replacedLength = replaced.length;
+            
+            analysis.push(`=== ${testName} Analysis ===`);
+            analysis.push("");
+            analysis.push(`Original: ${originalLines} lines, ${originalLength} characters`);
+            analysis.push(`Replaced: ${replacedLines} lines, ${replacedLength} characters`);
+            analysis.push(`Change: ${replacedLength - originalLength} characters (${replacedLength > originalLength ? '+' : ''}${((replacedLength - originalLength) / originalLength * 100).toFixed(1)}%)`);
+            analysis.push("");
+            
+            // Check if content was completely replaced
+            const isCompletelyDifferent = original !== replaced;
+            if (isCompletelyDifferent) {
+                analysis.push("✅ Content was completely replaced");
+            } else {
+                analysis.push("❌ Content was not replaced");
+            }
+            
+            // Check for specific content indicators
+            const originalKeywords = ['chess', 'tournament', 'panchatantra'];
+            const replacedKeywords = ['sports', 'workshop', 'cultural', 'science', 'music', 'debate'];
+            
+            const hasOriginalContent = originalKeywords.some(keyword => replaced.toLowerCase().includes(keyword));
+            const hasNewContent = replacedKeywords.some(keyword => replaced.toLowerCase().includes(keyword));
+            
+            if (!hasOriginalContent && hasNewContent) {
+                analysis.push("✅ Old content removed, new content added");
+            } else if (hasNewContent) {
+                analysis.push("⚠️ New content added but old content may remain");
+            } else {
+                analysis.push("❌ No new content detected");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

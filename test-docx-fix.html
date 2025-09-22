@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test DOCX Generation Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test DOCX Generation Fix</h1>
+        <p>This test verifies that the DOCX generation fix resolves the XML corruption issue.</p>
+
+        <button onclick="testDocxGeneration()">Test DOCX Generation</button>
+        <button onclick="testWithSpecialCharacters()">Test with Special Characters</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <script>
+        const { Document, Packer, Paragraph, TextRun, AlignmentType, DocxTable, DocxTableRow, DocxTableCell, BorderStyle, WidthType } = docx;
+
+        function cleanTextForXML(text) {
+            return text
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '') // Keep only printable characters
+                .replace(/\s+/g, ' ') // Normalize whitespace
+                .trim();
+        }
+
+        async function testDocxGeneration() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing DOCX generation...';
+            
+            try {
+                console.log('📝 Testing DOCX generation with XML-safe content...');
+                
+                const testContent = `Subject: Test NFA Document
+
+Request for approval regarding test document generation. This is a test to verify the download functionality works correctly.
+
+• The test will verify document generation
+• Proper formatting and structure will be maintained
+• Download functionality will be tested thoroughly
+
+The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`;
+
+                // Clean content for XML safety
+                const cleanContent = cleanTextForXML(testContent);
+                console.log('🧹 Content cleaned, length:', cleanContent.length);
+
+                // Create document with proper structure
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            // Date - Right aligned
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: `Date: ${new Date().toLocaleDateString('en-GB').replace(/[^\x20-\x7E]/g, '')}`,
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.RIGHT,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // NFA Title - Centered
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Note For Approval (NFA)",
+                                        bold: true,
+                                        size: 22,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.CENTER,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // Content paragraphs
+                            ...createTemplateParagraphs(cleanContent),
+                            
+                            // Conclusion
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.".replace(/[^\x20-\x7E]/g, ''),
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: {
+                                    before: 300,
+                                    after: 300,
+                                },
+                            }),
+                            
+                            // Simple signature
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Dr Phani Kumar Pullela".replace(/[^\x20-\x7E]/g, ''),
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                        ],
+                    }],
+                });
+
+                console.log('📝 Document structure created successfully');
+
+                // Generate and download the document
+                console.log('🔄 Converting document to blob...');
+                const blob = await Packer.toBlob(doc);
+                console.log('📦 Blob created, size:', blob.size);
+
+                const fileName = `test_fixed_docx_${new Date().toISOString().slice(0, 10)}.docx`;
+                console.log('💾 Downloading file:', fileName);
+
+                saveAs(blob, fileName);
+
+                resultDiv.innerHTML = `<div class="result success">✅ DOCX generation test successful!\n\nFile: ${fileName}\nSize: ${blob.size} bytes\n\nThis DOCX file should now open correctly in Microsoft Word without XML errors.</div>`;
+                
+            } catch (error) {
+                console.error('❌ DOCX generation test failed:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ DOCX generation test failed\n\nError: ${error.message}\nStack: ${error.stack}</div>`;
+            }
+        }
+
+        async function testWithSpecialCharacters() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing DOCX generation with special characters...';
+            
+            try {
+                console.log('📝 Testing DOCX generation with special characters...');
+                
+                const testContent = `Subject: Test with Special Characters
+
+Request for approval regarding test with special characters: "quotes", 'apostrophes', & ampersands, <brackets>, and other symbols.
+
+• Test bullet point with "quotes" and 'apostrophes'
+• Another bullet with & ampersand and <brackets>
+• Final bullet with special symbols: @#$%^&*()
+
+The above proposal is submitted for approval.`;
+
+                // Clean content for XML safety
+                const cleanContent = cleanTextForXML(testContent);
+                console.log('🧹 Content cleaned, length:', cleanContent.length);
+
+                // Create document
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Test Document with Special Characters",
+                                        bold: true,
+                                        size: 22,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.CENTER,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            ...createTemplateParagraphs(cleanContent),
+                        ],
+                    }],
+                });
+
+                console.log('📝 Document structure created successfully');
+
+                // Generate and download the document
+                const blob = await Packer.toBlob(doc);
+                console.log('📦 Blob created, size:', blob.size);
+
+                const fileName = `test_special_chars_${new Date().toISOString().slice(0, 10)}.docx`;
+                console.log('💾 Downloading file:', fileName);
+
+                saveAs(blob, fileName);
+
+                resultDiv.innerHTML = `<div class="result success">✅ Special characters test successful!\n\nFile: ${fileName}\nSize: ${blob.size} bytes\n\nThis DOCX file should handle special characters correctly and open in Microsoft Word.</div>`;
+                
+            } catch (error) {
+                console.error('❌ Special characters test failed:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ Special characters test failed\n\nError: ${error.message}</div>`;
+            }
+        }
+
+        function createTemplateParagraphs(content) {
+            if (!content) return [];
+            
+            const paragraphs = [];
+            const lines = content.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (!line) {
+                    // Empty line
+                    paragraphs.push(new Paragraph({
+                        children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                // Clean the line to remove any problematic characters
+                const cleanLine = cleanTextForXML(line);
+                if (!cleanLine) continue;
+                
+                // Subject line
+                if (cleanLine.toLowerCase().startsWith('subject:')) {
+                    const subjectText = cleanLine.substring(8).trim();
+                    paragraphs.push(new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Subject: ",
+                                bold: true,
+                                size: 20,
+                                font: "Arial",
+                            }),
+                            new TextRun({
+                                text: subjectText.replace(/[^\x20-\x7E]/g, ''),
+                                size: 20,
+                                font: "Arial",
+                            }),
+                        ],
+                        alignment: AlignmentType.JUSTIFY,
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                // Bullet points
+                if (cleanLine.startsWith('•')) {
+                    const bulletText = cleanLine.substring(1).trim();
+                    paragraphs.push(new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "• ",
+                                size: 20,
+                                font: "Arial",
+                            }),
+                            new TextRun({
+                                text: bulletText.replace(/[^\x20-\x7E]/g, ''),
+                                size: 20,
+                                font: "Arial",
+                            }),
+                        ],
+                        alignment: AlignmentType.JUSTIFY,
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                // Regular paragraphs
+                paragraphs.push(new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: cleanLine.replace(/[^\x20-\x7E]/g, ''),
+                            size: 20,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }));
+            }
+            
+            return paragraphs;
+        }
+
+        // Auto-run test on page load
+        window.onload = function() {
+            console.log('🔧 DOCX Generation Fix Test Page Loaded');
+            console.log('Click the buttons above to test the DOCX generation');
+        };
+    </script>
+</body>
+</html>

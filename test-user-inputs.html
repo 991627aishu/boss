@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test User Inputs - Subject, Summary, Bullets, Table</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .test-case { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; margin: 10px 0; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Test User Inputs - Subject, Summary, Bullets, Table</h1>
+    <p>This test verifies that the AI generates content based on EXACT user inputs and shows the SAME content in preview and output.</p>
+    
+    <div>
+        <button onclick="testAllScenarios()">Test All Scenarios</button>
+        <button onclick="testWithBullets()">Test With Bullets</button>
+        <button onclick="testWithoutBullets()">Test Without Bullets</button>
+        <button onclick="testWithTable()">Test With Table</button>
+        <button onclick="testWithoutTable()">Test Without Table</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Results:</h3>
+        <div id="test-results" class="content-display">Click a test button to see the results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const testResultsDiv = document.getElementById('test-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        function analyzeContent(content, testName, expectedBullets, expectedTable) {
+            const analysis = [];
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            analysis.push(`=== ${testName} Analysis ===`);
+            analysis.push("");
+            
+            // Check 1: Subject line (no "Subject:" prefix)
+            const hasSubjectPrefix = lines.some(line => line.startsWith('Subject:'));
+            if (hasSubjectPrefix) {
+                analysis.push("❌ FAIL: Content has 'Subject:' prefix - should be direct subject line");
+            } else {
+                analysis.push("✅ PASS: Subject line without prefix");
+            }
+            
+            // Check 2: Request paragraph starts correctly
+            const hasRequestParagraph = content.includes('Request for approval regarding');
+            if (hasRequestParagraph) {
+                analysis.push("✅ PASS: Contains request paragraph starting with 'Request for approval regarding'");
+            } else {
+                analysis.push("❌ FAIL: Missing request paragraph with 'Request for approval regarding'");
+            }
+            
+            // Check 3: Bullet points (if expected)
+            const bulletPoints = content.match(/•/g) || [];
+            if (expectedBullets) {
+                if (bulletPoints.length >= 3) {
+                    analysis.push(`✅ PASS: Contains ${bulletPoints.length} bullet points with • symbol (as requested)`);
+                } else {
+                    analysis.push(`❌ FAIL: Only ${bulletPoints.length} bullet points found, need at least 3 (user requested bullets)`);
+                }
+            } else {
+                if (bulletPoints.length === 0) {
+                    analysis.push("✅ PASS: No bullet points found (as requested - user chose no bullets)");
+                } else {
+                    analysis.push(`❌ FAIL: Found ${bulletPoints.length} bullet points but user chose no bullets`);
+                }
+            }
+            
+            // Check 4: Table data (if expected)
+            if (expectedTable) {
+                const hasTableData = content.includes('slno') || content.includes('item') || content.includes('total');
+                if (hasTableData) {
+                    analysis.push("✅ PASS: Contains table data (as requested - user provided table)");
+                } else {
+                    analysis.push("❌ FAIL: Missing table data (user provided table but not found in content)");
+                }
+            } else {
+                const hasTableData = content.includes('slno') || content.includes('item') || content.includes('total');
+                if (!hasTableData) {
+                    analysis.push("✅ PASS: No table data found (as requested - user chose no table)");
+                } else {
+                    analysis.push("❌ FAIL: Found table data but user chose no table");
+                }
+            }
+            
+            // Check 5: Conclusion
+            const hasConclusion = content.includes('The above proposal is submitted for approval');
+            if (hasConclusion) {
+                analysis.push("✅ PASS: Contains conclusion paragraph");
+            } else {
+                analysis.push("❌ FAIL: Missing conclusion paragraph");
+            }
+            
+            // Check 6: No generic content
+            const hasGenericContent = content.includes('NFA generated successfully') || 
+                                     content.includes('This proposal requires administrative approval');
+            if (hasGenericContent) {
+                analysis.push("❌ FAIL: Contains generic content instead of specific details");
+            } else {
+                analysis.push("✅ PASS: No generic content detected");
+            }
+            
+            // Overall assessment
+            const passCount = (analysis.join('\n').match(/✅ PASS/g) || []).length;
+            const failCount = (analysis.join('\n').match(/❌ FAIL/g) || []).length;
+            
+            analysis.push("");
+            analysis.push(`=== OVERALL ASSESSMENT ===`);
+            analysis.push(`Passed: ${passCount} requirements`);
+            analysis.push(`Failed: ${failCount} requirements`);
+            
+            if (failCount === 0) {
+                analysis.push("🎉 PERFECT: All requirements met!");
+            } else if (failCount <= 2) {
+                analysis.push("⚠️ GOOD: Most requirements met, minor issues");
+            } else {
+                analysis.push("❌ NEEDS IMPROVEMENT: Multiple requirements failed");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        async function testAllScenarios() {
+            try {
+                log("🔄 Testing all user input scenarios...", 'info');
+                
+                const scenarios = [
+                    {
+                        name: "Chess Inauguration - With Bullets + Table",
+                        subject: "inauguration of chess by panchatantra",
+                        summary: "inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be held in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                        nfaType: "advance",
+                        bulletsRequired: true,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"], ["2", "prize", "2", "20"], ["3", "prize", "2", "20"], ["Total", "", "", "60"]],
+                        expectedBullets: true,
+                        expectedTable: true
+                    },
+                    {
+                        name: "Teacher's Day - With Bullets + No Table",
+                        subject: "Teacher's Day Celebration",
+                        summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                        nfaType: "advance",
+                        bulletsRequired: true,
+                        tableData: [],
+                        expectedBullets: true,
+                        expectedTable: false
+                    },
+                    {
+                        name: "Sports Tournament - No Bullets + Table",
+                        subject: "Inter-College Sports Tournament",
+                        summary: "Inter-college sports tournament on 15th October 2025 featuring cricket, football, and basketball competitions with 20 participating colleges and prize distribution ceremony.",
+                        nfaType: "reimbursement",
+                        bulletsRequired: false,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"], ["2", "prize", "2", "20"], ["3", "prize", "2", "20"], ["Total", "", "", "60"]],
+                        expectedBullets: false,
+                        expectedTable: true
+                    },
+                    {
+                        name: "Workshop - No Bullets + No Table",
+                        subject: "Technical Workshop on AI",
+                        summary: "Technical workshop on Artificial Intelligence and Machine Learning on 20th November 2025 for 100 students with expert speakers and hands-on training sessions.",
+                        nfaType: "advance",
+                        bulletsRequired: false,
+                        tableData: [],
+                        expectedBullets: false,
+                        expectedTable: false
+                    }
+                ];
+                
+                let allResults = "";
+                
+                for (const scenario of scenarios) {
+                    allResults += `\n${'='.repeat(80)}\n`;
+                    allResults += `${scenario.name}\n`;
+                    allResults += `${'='.repeat(80)}\n\n`;
+                    
+                    const requestData = {
+                        subject: scenario.subject,
+                        summary: scenario.summary,
+                        nfaType: scenario.nfaType,
+                        bulletsRequired: scenario.bulletsRequired,
+                        tableData: scenario.tableData
+                    };
+                    
+                    try {
+                        const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData),
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            const content = result.nfaText || "";
+                            const analysis = analyzeContent(content, scenario.name, scenario.expectedBullets, scenario.expectedTable);
+                            
+                            allResults += `Generated Content:\n${content}\n\n`;
+                            allResults += `Analysis:\n${analysis}\n\n`;
+                        } else {
+                            allResults += `Error: ${result.error}\n\n`;
+                        }
+                    } catch (error) {
+                        allResults += `Error: ${error.message}\n\n`;
+                    }
+                }
+                
+                testResultsDiv.textContent = allResults;
+                log("✅ All scenarios tested", 'success');
+                
+            } catch (error) {
+                log(`❌ Error testing all scenarios: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWithBullets() {
+            try {
+                log("🔄 Testing with bullets enabled...", 'info');
+                
+                const requestData = {
+                    subject: "Cultural Festival 2025",
+                    summary: "Annual cultural festival on 25th December 2025 featuring dance performances, music concerts, art exhibitions, and food stalls for 500 participants from various departments.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: []
+                };
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeContent(content, "Cultural Festival - With Bullets", true, false);
+                    
+                    testResultsDiv.textContent = `Generated Content:\n${content}\n\nAnalysis:\n${analysis}`;
+                    
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ With Bullets PERFECT: ${passCount} requirements met`, 'success');
+                    } else {
+                        log(`⚠️ With Bullets: ${passCount} passed, ${failCount} failed`, 'warning');
+                    }
+                } else {
+                    throw new Error(result.error || "With bullets test failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing with bullets: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWithoutBullets() {
+            try {
+                log("🔄 Testing without bullets...", 'info');
+                
+                const requestData = {
+                    subject: "Library Renovation Project",
+                    summary: "Renovation of the main library building to modernize facilities, install new furniture, upgrade computer systems, and create study spaces for 1000 students.",
+                    nfaType: "reimbursement",
+                    bulletsRequired: false,
+                    tableData: []
+                };
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeContent(content, "Library Renovation - No Bullets", false, false);
+                    
+                    testResultsDiv.textContent = `Generated Content:\n${content}\n\nAnalysis:\n${analysis}`;
+                    
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ Without Bullets PERFECT: ${passCount} requirements met`, 'success');
+                    } else {
+                        log(`⚠️ Without Bullets: ${passCount} passed, ${failCount} failed`, 'warning');
+                    }
+                } else {
+                    throw new Error(result.error || "Without bullets test failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing without bullets: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWithTable() {
+            try {
+                log("🔄 Testing with table data...", 'info');
+                
+                const requestData = {
+                    subject: "Equipment Purchase",
+                    summary: "Purchase of laboratory equipment for the chemistry department including microscopes, test tubes, and safety gear for 200 students.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "microscope", "5", "50000"], ["2", "test tubes", "100", "5000"], ["3", "safety gear", "50", "25000"], ["Total", "", "", "80000"]]
+                };
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeContent(content, "Equipment Purchase - With Table", true, true);
+                    
+                    testResultsDiv.textContent = `Generated Content:\n${content}\n\nAnalysis:\n${analysis}`;
+                    
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ With Table PERFECT: ${passCount} requirements met`, 'success');
+                    } else {
+                        log(`⚠️ With Table: ${passCount} passed, ${failCount} failed`, 'warning');
+                    }
+                } else {
+                    throw new Error(result.error || "With table test failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing with table: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWithoutTable() {
+            try {
+                log("🔄 Testing without table data...", 'info');
+                
+                const requestData = {
+                    subject: "Guest Lecture Series",
+                    summary: "Monthly guest lecture series featuring industry experts and academicians to provide students with practical insights and career guidance.",
+                    nfaType: "reimbursement",
+                    bulletsRequired: false,
+                    tableData: []
+                };
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeContent(content, "Guest Lecture - No Table", false, false);
+                    
+                    testResultsDiv.textContent = `Generated Content:\n${content}\n\nAnalysis:\n${analysis}`;
+                    
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ Without Table PERFECT: ${passCount} requirements met`, 'success');
+                    } else {
+                        log(`⚠️ Without Table: ${passCount} passed, ${failCount} failed`, 'warning');
+                    }
+                } else {
+                    throw new Error(result.error || "Without table test failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing without table: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

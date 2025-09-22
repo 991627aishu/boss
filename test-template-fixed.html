@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Template Fixed DOCX Generation</title>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <h1>Test Template Fixed DOCX Generation</h1>
+    <p>This test generates a DOCX with the exact template structure including header image, proper table, and 2x2 signature grid.</p>
+    
+    <button onclick="generateTemplateDocx()">Generate Template DOCX</button>
+    
+    <div id="status"></div>
+
+    <script>
+        const { 
+            Document, 
+            Packer, 
+            Paragraph, 
+            TextRun, 
+            ImageRun,
+            DocxTable, 
+            DocxTableRow, 
+            DocxTableCell,
+            AlignmentType, 
+            BorderStyle, 
+            WidthType 
+        } = docx;
+
+        // Create header with image
+        const createHeaderWithImage = async () => {
+            try {
+                console.log("🖼️ Loading header image...");
+                const response = await fetch('/header.png');
+                if (response.ok) {
+                    const imageBuffer = await response.arrayBuffer();
+                    console.log("✅ Header image loaded successfully");
+                    return [
+                        new Paragraph({
+                            children: [
+                                new ImageRun({
+                                    data: imageBuffer,
+                                    transformation: {
+                                        width: 400,
+                                        height: 100,
+                                    },
+                                }),
+                            ],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 200 },
+                        }),
+                    ];
+                } else {
+                    console.log("⚠️ Header image not found, using text header");
+                    return createTextHeader();
+                }
+            } catch (error) {
+                console.log("❌ Error loading header image, using text header:", error);
+                return createTextHeader();
+            }
+        };
+
+        // Create text-based header as fallback
+        const createTextHeader = () => {
+            return [
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "RV UNIVERSITY",
+                            bold: true,
+                            size: 24,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Go, change the world",
+                            size: 18,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "An initiative of RV Educational Institutions",
+                            size: 16,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India",
+                            size: 16,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "+91 80 68199900 | www.rvu.edu.in",
+                            size: 16,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 300 },
+                }),
+            ];
+        };
+
+        // Create proper table structure
+        const createProperTable = () => {
+            const tableHeaders = ["slno", "item", "unit", "total"];
+            const tableRows = [
+                ["1", "prize", "2", "20"],
+                ["2", "prize", "2", "20"],
+                ["3", "prize", "2", "20"],
+                ["Total", "", "", "60"]
+            ];
+            
+            try {
+                const tableRows_structure = [];
+                
+                // Header row
+                const headerRow = new DocxTableRow({
+                    children: tableHeaders.map(header => 
+                        new DocxTableCell({
+                            children: [
+                                new Paragraph({
+                                    children: [
+                                        new TextRun({
+                                            text: header || " ",
+                                            bold: true,
+                                            size: 20,
+                                            font: "Arial",
+                                        }),
+                                    ],
+                                    alignment: AlignmentType.CENTER,
+                                }),
+                            ],
+                        })
+                    ),
+                });
+                tableRows_structure.push(headerRow);
+                
+                // Data rows
+                tableRows.forEach(row => {
+                    const dataRow = new DocxTableRow({
+                        children: row.map(cell => 
+                            new DocxTableCell({
+                                children: [
+                                    new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: (cell || "").toString(),
+                                                size: 20,
+                                                font: "Arial",
+                                            }),
+                                        ],
+                                        alignment: AlignmentType.CENTER,
+                                    }),
+                                ],
+                            })
+                        ),
+                    });
+                    tableRows_structure.push(dataRow);
+                });
+                
+                return [
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Financial/Resource Implications Table:",
+                                bold: true,
+                                size: 24,
+                                font: "Arial",
+                            }),
+                        ],
+                        spacing: {
+                            before: 400,
+                            after: 200,
+                        },
+                    }),
+                    new DocxTable({
+                        rows: tableRows_structure,
+                        width: {
+                            size: 100,
+                            type: WidthType.PERCENTAGE,
+                        },
+                        borders: {
+                            top: { style: BorderStyle.SINGLE, size: 1 },
+                            bottom: { style: BorderStyle.SINGLE, size: 1 },
+                            left: { style: BorderStyle.SINGLE, size: 1 },
+                            right: { style: BorderStyle.SINGLE, size: 1 },
+                            insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+                            insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+                        },
+                    }),
+                ];
+            } catch (error) {
+                console.error("Error creating table:", error);
+                return [
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Financial/Resource Implications Table:",
+                                bold: true,
+                                size: 24,
+                                font: "Arial",
+                            }),
+                        ],
+                        spacing: {
+                            before: 400,
+                            after: 200,
+                        },
+                    }),
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Table data could not be formatted.",
+                                size: 20,
+                                font: "Arial",
+                            }),
+                        ],
+                    }),
+                ];
+            }
+        };
+
+        // Create signature grid layout
+        const createSignatureGrid = () => {
+            try {
+                // Create 2x2 signature table
+                const signatureTable = new DocxTable({
+                    rows: [
+                        // First row
+                        new DocxTableRow({
+                            children: [
+                                // Left column
+                                new DocxTableCell({
+                                    children: [
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "_________________",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Dr Phani Kumar Pullela",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Dean, Student Affairs",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "(Prepared by)",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 200 },
+                                        }),
+                                    ],
+                                }),
+                                // Right column
+                                new DocxTableCell({
+                                    children: [
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "_________________",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Mr Chandrasekhar KN",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Head Finance",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "(Approved by)",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 200 },
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                        // Second row
+                        new DocxTableRow({
+                            children: [
+                                // Left column
+                                new DocxTableCell({
+                                    children: [
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "_________________",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Dr Sahana D Gowda",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Registrar - RV University",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "(Recommended by)",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 200 },
+                                        }),
+                                    ],
+                                }),
+                                // Right column
+                                new DocxTableCell({
+                                    children: [
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "_________________",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Prof (Dr) Dwarika Prasad Uniyal",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "Vice Chancellor (i/c)",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 100 },
+                                        }),
+                                        new Paragraph({
+                                            children: [
+                                                new TextRun({
+                                                    text: "(Approved by)",
+                                                    size: 20,
+                                                    font: "Arial",
+                                                }),
+                                            ],
+                                            alignment: AlignmentType.JUSTIFY,
+                                            spacing: { after: 200 },
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    ],
+                    width: {
+                        size: 100,
+                        type: WidthType.PERCENTAGE,
+                    },
+                    borders: {
+                        top: { style: BorderStyle.NONE, size: 0 },
+                        bottom: { style: BorderStyle.NONE, size: 0 },
+                        left: { style: BorderStyle.NONE, size: 0 },
+                        right: { style: BorderStyle.NONE, size: 0 },
+                        insideHorizontal: { style: BorderStyle.NONE, size: 0 },
+                        insideVertical: { style: BorderStyle.NONE, size: 0 },
+                    },
+                });
+                
+                return [signatureTable];
+                
+            } catch (error) {
+                console.error("Error creating signature grid:", error);
+                return [];
+            }
+        };
+
+        const generateTemplateDocx = async () => {
+            try {
+                console.log("📝 Generating template DOCX document with header image...");
+                
+                document.getElementById('status').innerHTML = '<p style="color: blue;">🔄 Generating document...</p>';
+                
+                // Create document with exact template structure
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            // Header with Image
+                            ...(await createHeaderWithImage()),
+                            
+                            // Date - Right aligned
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: `Date: ${new Date().toLocaleDateString('en-GB')}`,
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.RIGHT,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // NFA Title - Centered
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Note For Approval (NFA)",
+                                        bold: true,
+                                        size: 22,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.CENTER,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // Subject
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Subject: inauguration of chess by panchatantra",
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Content
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Request for approval regarding the inauguration of chess by Panchatantra on 16th August at 10 AM. This event will be conducted in collaboration with RV University and Bharatiya Vidya Bhavan. The objective is to promote strategic thinking and cultural exchange through chess.",
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Bullet points
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "• The inauguration will feature AVS Murthy, Chancellor of RV University, as the chief guest.",
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 100 },
+                            }),
+                            
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "• The event aims to foster educational partnerships between institutions and enhance community engagement.",
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 200 },
+                            }),
+                            
+                            // Table
+                            ...createProperTable(),
+                            
+                            // Conclusion
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.",
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: {
+                                    before: 300,
+                                    after: 300,
+                                },
+                            }),
+                            
+                            // Signature layout - 2x2 grid
+                            ...createSignatureGrid(),
+                        ],
+                    }],
+                });
+                
+                console.log("📝 Document structure created successfully");
+                
+                // Generate and download the document
+                console.log("🔄 Converting document to blob...");
+                const blob = await Packer.toBlob(doc);
+                console.log("📦 Blob created, size:", blob.size);
+                
+                const fileName = `nfa_template_test_${new Date().toISOString().slice(0, 10)}.docx`;
+                console.log("💾 Downloading file:", fileName);
+                
+                saveAs(blob, fileName);
+                
+                console.log("✅ Template DOCX generated and downloaded successfully");
+                document.getElementById('status').innerHTML = '<p style="color: green;">✅ Document generated and downloaded successfully!</p>';
+                
+            } catch (error) {
+                console.error("❌ Error generating template DOCX:", error);
+                console.error("❌ Error details:", error.stack);
+                document.getElementById('status').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

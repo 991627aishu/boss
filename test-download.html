@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFA Download Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 NFA Download Test Page</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Backend Health</h2>
+        <button onclick="testHealth()">Test Backend Health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Python Integration</h2>
+        <button onclick="testPython()">Test Python Script</button>
+        <div id="python-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test NFA Generation</h2>
+        <button onclick="testNFAGeneration()">Generate Test NFA</button>
+        <div id="nfa-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Download</h2>
+        <button onclick="testDownload()" id="download-btn">Download Test NFA</button>
+        <div id="download-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let lastGeneratedFile = null;
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="result success">✅ ${data.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Backend not healthy</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Connection failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testPython() {
+            const resultDiv = document.getElementById('python-result');
+            resultDiv.innerHTML = 'Testing Python script...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/test-python`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="result success">✅ Python script is working</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Python script failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testNFAGeneration() {
+            const resultDiv = document.getElementById('nfa-result');
+            resultDiv.innerHTML = 'Generating NFA document...';
+            
+            const testData = {
+                subject: "Test NFA Document",
+                summary: "This is a test NFA document to verify the download functionality works correctly.",
+                bulletsRequired: true,
+                nfaType: "reimbursement",
+                tableData: [
+                    ["slno", "item", "unit", "total"],
+                    ["1", "prize", "2", "20"],
+                    ["2", "certificate", "5", "50"]
+                ]
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    lastGeneratedFile = data.file;
+                    resultDiv.innerHTML = `<div class="result success">✅ NFA generated successfully!<br>File: ${data.file}</div>`;
+                    document.getElementById('download-btn').disabled = false;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ NFA generation failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Generation failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testDownload() {
+            const resultDiv = document.getElementById('download-result');
+            resultDiv.innerHTML = 'Testing download...';
+            
+            if (!lastGeneratedFile) {
+                resultDiv.innerHTML = '<div class="result error">❌ No file to download. Generate NFA first.</div>';
+                return;
+            }
+            
+            try {
+                const downloadUrl = `${API_BASE}${lastGeneratedFile}`;
+                resultDiv.innerHTML = `Testing download from: <br><strong>${downloadUrl}</strong>`;
+                
+                // Test if file exists first
+                try {
+                    const response = await fetch(downloadUrl, { method: 'HEAD' });
+                    if (!response.ok) {
+                        throw new Error(`File not found: ${response.status}`);
+                    }
+                    resultDiv.innerHTML += '<br><div class="result success">✅ File exists on server</div>';
+                } catch (fetchError) {
+                    resultDiv.innerHTML += `<br><div class="result error">❌ File check failed: ${fetchError.message}</div>`;
+                    return;
+                }
+                
+                // Try multiple download methods
+                let downloadSuccess = false;
+                
+                // Method 1: Direct link
+                try {
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = `test-nfa-${Date.now()}.docx`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    resultDiv.innerHTML += '<br><div class="result success">✅ Method 1: Direct download initiated</div>';
+                    downloadSuccess = true;
+                } catch (error) {
+                    resultDiv.innerHTML += `<br><div class="result error">❌ Method 1 failed: ${error.message}</div>`;
+                }
+                
+                // Method 2: Fetch and blob (if Method 1 failed)
+                if (!downloadSuccess) {
+                    try {
+                        const response = await fetch(downloadUrl);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `test-nfa-blob-${Date.now()}.docx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        window.URL.revokeObjectURL(url);
+                        
+                        resultDiv.innerHTML += '<br><div class="result success">✅ Method 2: Blob download successful</div>';
+                        downloadSuccess = true;
+                    } catch (error) {
+                        resultDiv.innerHTML += `<br><div class="result error">❌ Method 2 failed: ${error.message}</div>`;
+                    }
+                }
+                
+                // Method 3: Window open (if both failed)
+                if (!downloadSuccess) {
+                    try {
+                        window.open(downloadUrl, '_blank');
+                        resultDiv.innerHTML += '<br><div class="result success">✅ Method 3: Opened in new tab</div>';
+                        downloadSuccess = true;
+                    } catch (error) {
+                        resultDiv.innerHTML += `<br><div class="result error">❌ Method 3 failed: ${error.message}</div>`;
+                    }
+                }
+                
+                if (downloadSuccess) {
+                    resultDiv.innerHTML += '<br><div class="result success">🎉 Download test completed successfully!</div>';
+                } else {
+                    resultDiv.innerHTML += '<br><div class="result error">❌ All download methods failed</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Download test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            console.log('🧪 NFA Download Test Page Loaded');
+            console.log('Click the buttons above to test each component');
+        };
+    </script>
+</body>
+</html>

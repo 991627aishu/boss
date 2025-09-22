@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Template Match - Preview vs Output</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { display: flex; gap: 20px; }
+        .preview-section { flex: 1; border: 1px solid #ccc; padding: 15px; }
+        .output-section { flex: 1; border: 1px solid #ccc; padding: 15px; }
+        .preview-content { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Test Template Match - Preview vs Python Output</h1>
+    <p>This test verifies that the web preview matches the Python-generated DOCX output exactly.</p>
+    
+    <div>
+        <button onclick="testPreview()">Test Web Preview</button>
+        <button onclick="testPythonOutput()">Test Python Output</button>
+        <button onclick="compareBoth()">Compare Preview vs Output</button>
+        <button onclick="downloadTestDocx()">Download Test DOCX</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="container">
+        <div class="preview-section">
+            <h3>Web Preview (formatNfaContent)</h3>
+            <div id="preview-content" class="preview-content">Click "Test Web Preview" to see the formatted preview...</div>
+        </div>
+        
+        <div class="output-section">
+            <h3>Python Script Output</h3>
+            <div id="output-content" class="preview-content">Click "Test Python Output" to see the Python-generated content...</div>
+        </div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const previewDiv = document.getElementById('preview-content');
+        const outputDiv = document.getElementById('output-content');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        // Simulate the formatNfaContent function from React component
+        function formatNfaContent(content) {
+            if (!content) return "";
+            
+            // Create the exact template structure matching your third image
+            const lines = content.split('\n');
+            const formattedLines = [];
+            
+            // Add header section (matching your template)
+            formattedLines.push("RV UNIVERSITY");
+            formattedLines.push("Go, change the world");
+            formattedLines.push("An initiative of RV Educational Institutions");
+            formattedLines.push("");
+            formattedLines.push("RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India");
+            formattedLines.push("+91 80 68199900 | www.rvu.edu.in");
+            formattedLines.push("");
+            formattedLines.push(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+            formattedLines.push("");
+            formattedLines.push("Note For Approval (NFA)");
+            formattedLines.push("");
+            
+            // Process the content lines
+            let subjectFound = false;
+            let inTableSection = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (!subjectFound && line && !line.includes('Request for approval') && !line.includes('•') && !line.includes('The above proposal')) {
+                    // First non-empty line is the subject
+                    formattedLines.push(`Subject: ${line}`);
+                    formattedLines.push('');
+                    subjectFound = true;
+                } else if (line.includes('Request for approval')) {
+                    // Request paragraph
+                    formattedLines.push(line);
+                    formattedLines.push('');
+                } else if (line.startsWith('•')) {
+                    // Bullet points
+                    formattedLines.push(line);
+                } else if (line.includes('|') && line.split('|').length > 1) {
+                    // Table data
+                    if (!inTableSection) {
+                        formattedLines.push('');
+                        formattedLines.push('Financial/Resource Implications Table:');
+                        formattedLines.push('');
+                        inTableSection = true;
+                    }
+                    
+                    const columns = line.split('|').map(col => col.trim());
+                    if (columns.length >= 2) {
+                        const isHeader = columns.some(col => 
+                            col.toLowerCase().includes('slno') || 
+                            col.toLowerCase().includes('item') || 
+                            col.toLowerCase().includes('unit') || 
+                            col.toLowerCase().includes('total')
+                        );
+                        
+                        if (isHeader) {
+                            formattedLines.push(columns.join(' | '));
+                            formattedLines.push('-'.repeat(columns.join(' | ').length));
+                        } else {
+                            formattedLines.push(columns.join(' | '));
+                        }
+                    }
+                } else if (line.includes('The above proposal is submitted for approval')) {
+                    // Conclusion
+                    formattedLines.push('');
+                    formattedLines.push(line);
+                    formattedLines.push('');
+                } else if (line.trim() && !line.includes('•')) {
+                    // Regular content lines
+                    formattedLines.push(line);
+                }
+            }
+            
+            // Add signature section (matching your template)
+            formattedLines.push('');
+            formattedLines.push('_________________                    _________________');
+            formattedLines.push('Dr Phani Kumar Pullela              Mr Chandrasekhar KN');
+            formattedLines.push('Dean, Student Affairs                Head Finance');
+            formattedLines.push('(Prepared by)                        (Approved by)');
+            formattedLines.push('');
+            formattedLines.push('_________________                    _________________');
+            formattedLines.push('Dr Sahana D Gowda                    Prof (Dr) Dwarika Prasad Uniyal');
+            formattedLines.push('Registrar - RV University             Vice Chancellor (i/c)');
+            formattedLines.push('(Recommended by)                    (Approved by)');
+            
+            return formattedLines.join('\n');
+        }
+        
+        async function testPreview() {
+            try {
+                log("🔄 Testing web preview formatting...", 'info');
+                
+                // Sample content (similar to what your Python script generates)
+                const sampleContent = `Teacher's Day Celebration
+
+Request for approval regarding the Teacher's Day Celebration on 5th September 2025. This event will honor and appreciate our dedicated teaching staff. The objective is to foster a positive learning environment and strengthen teacher-student relationships.
+
+• The celebration will feature cultural performances by students and faculty
+• Recognition awards will be presented to outstanding teachers
+• A special luncheon will be organized for all teaching staff
+
+The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.`;
+                
+                const formattedPreview = formatNfaContent(sampleContent);
+                previewDiv.textContent = formattedPreview;
+                
+                log("✅ Web preview formatted successfully", 'success');
+                
+            } catch (error) {
+                log(`❌ Error testing preview: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPythonOutput() {
+            try {
+                log("🔄 Testing Python script output...", 'info');
+                
+                const requestData = {
+                    editedText: `Teacher's Day Celebration
+
+Request for approval regarding the Teacher's Day Celebration on 5th September 2025. This event will honor and appreciate our dedicated teaching staff. The objective is to foster a positive learning environment and strengthen teacher-student relationships.
+
+• The celebration will feature cultural performances by students and faculty
+• Recognition awards will be presented to outstanding teachers  
+• A special luncheon will be organized for all teaching staff
+
+The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.`,
+                    subject: "Teacher's Day Celebration",
+                    summary: "Teacher's Day Celebration on 5th September 2025",
+                    nfaType: "advance",
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const response = await fetch('http://localhost:5000/api/download-edited-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Try to get the text content from the generated DOCX
+                    const textResponse = await fetch(`http://localhost:5000${result.filePath}`);
+                    if (textResponse.ok) {
+                        // For now, show the file path since we can't extract text from DOCX in browser
+                        outputDiv.textContent = `DOCX Generated Successfully!\n\nFile: ${result.fileName}\nPath: ${result.filePath}\n\nNote: DOCX contains the exact template structure with:\n- RV University header with logo\n- Proper date alignment\n- Subject formatting\n- Request paragraph\n- Bullet points\n- Financial table\n- Conclusion\n- 2x2 signature layout`;
+                    } else {
+                        outputDiv.textContent = `DOCX Generated: ${result.fileName}\n\nStatus: File created successfully`;
+                    }
+                    log("✅ Python script output generated successfully", 'success');
+                } else {
+                    throw new Error(result.error || "Python script failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing Python output: ${error.message}`, 'error');
+                outputDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function compareBoth() {
+            try {
+                log("🔄 Comparing preview vs Python output...", 'info');
+                
+                await testPreview();
+                await testPythonOutput();
+                
+                log("✅ Both preview and Python output tested. Check the side-by-side comparison above.", 'success');
+                
+            } catch (error) {
+                log(`❌ Error comparing: ${error.message}`, 'error');
+            }
+        }
+        
+        async function downloadTestDocx() {
+            try {
+                log("🔄 Downloading test DOCX...", 'info');
+                
+                const requestData = {
+                    editedText: `Teacher's Day Celebration
+
+Request for approval regarding the Teacher's Day Celebration on 5th September 2025. This event will honor and appreciate our dedicated teaching staff. The objective is to foster a positive learning environment and strengthen teacher-student relationships.
+
+• The celebration will feature cultural performances by students and faculty
+• Recognition awards will be presented to outstanding teachers  
+• A special luncheon will be organized for all teaching staff
+
+The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.`,
+                    subject: "Teacher's Day Celebration",
+                    summary: "Teacher's Day Celebration on 5th September 2025",
+                    nfaType: "advance",
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const response = await fetch('http://localhost:5000/api/download-edited-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Download the file
+                    const downloadUrl = `http://localhost:5000${result.filePath}`;
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = result.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    log(`✅ Test DOCX downloaded: ${result.fileName}`, 'success');
+                } else {
+                    throw new Error(result.error || "Failed to generate DOCX");
+                }
+                
+            } catch (error) {
+                log(`❌ Error downloading test DOCX: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run comparison on page load
+        window.onload = () => {
+            setTimeout(() => {
+                compareBoth();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFA Document Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background: #1976d2;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .automata-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .automata-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .automata-section h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .transition-input {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+            align-items: center;
+        }
+        .transition-input input {
+            width: auto;
+            flex: 1;
+        }
+        .add-transition {
+            background: #4caf50;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .remove-transition {
+            background: #f44336;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 NFA Document Generator</h1>
+        <p>Generate both Administrative NFA (Note For Approval) and Automata Theory NFA documents as Word .docx files.</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('admin')">Administrative NFA</button>
+            <button class="tab" onclick="switchTab('automata')">Automata Theory NFA</button>
+        </div>
+
+        <!-- Administrative NFA Tab -->
+        <div id="admin-tab" class="tab-content active">
+            <h2>📋 Administrative NFA (Note For Approval)</h2>
+            
+            <div class="form-group">
+                <label for="admin-subject">Subject:</label>
+                <input type="text" id="admin-subject" value="Chess By Panchatantra" placeholder="Enter subject">
+            </div>
+
+            <div class="form-group">
+                <label for="admin-summary">Summary:</label>
+                <textarea id="admin-summary" placeholder="Enter summary">RVU clubs combined celebrate the event Chess By Panchatantra in the RV University Campus. This proposal requires administrative approval for successful execution.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="admin-type">NFA Type:</label>
+                <select id="admin-type">
+                    <option value="reimbursement">Reimbursement</option>
+                    <option value="advance">Advance</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="admin-bullets">Include Bullet Points:</label>
+                <select id="admin-bullets">
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+
+            <button onclick="generateAdminNFA()">Generate Administrative NFA</button>
+            <button onclick="loadAdminSample()">Load Sample Data</button>
+        </div>
+
+        <!-- Automata Theory NFA Tab -->
+        <div id="automata-tab" class="tab-content">
+            <h2>🔤 Automata Theory NFA</h2>
+            
+            <div class="automata-input">
+                <div class="automata-section">
+                    <h3>Basic Information</h3>
+                    <div class="form-group">
+                        <label for="automata-title">NFA Title:</label>
+                        <input type="text" id="automata-title" value="NFA for Language Recognition" placeholder="Enter NFA title">
+                    </div>
+                    <div class="form-group">
+                        <label for="automata-description">Description:</label>
+                        <textarea id="automata-description" placeholder="Enter description">This NFA recognizes strings that start with 'a' and end with 'b'</textarea>
+                    </div>
+                </div>
+
+                <div class="automata-section">
+                    <h3>Alphabet</h3>
+                    <div class="form-group">
+                        <label for="automata-alphabet">Input Alphabet (comma-separated):</label>
+                        <input type="text" id="automata-alphabet" value="a, b" placeholder="e.g., a, b, c">
+                    </div>
+                </div>
+            </div>
+
+            <div class="automata-input">
+                <div class="automata-section">
+                    <h3>States</h3>
+                    <div class="form-group">
+                        <label for="automata-states">States (comma-separated):</label>
+                        <input type="text" id="automata-states" value="q0, q1, q2" placeholder="e.g., q0, q1, q2">
+                    </div>
+                    <div class="form-group">
+                        <label for="automata-start">Start State:</label>
+                        <input type="text" id="automata-start" value="q0" placeholder="e.g., q0">
+                    </div>
+                    <div class="form-group">
+                        <label for="automata-final">Final States (comma-separated):</label>
+                        <input type="text" id="automata-final" value="q2" placeholder="e.g., q1, q2">
+                    </div>
+                </div>
+
+                <div class="automata-section">
+                    <h3>Transitions</h3>
+                    <div id="transitions-container">
+                        <div class="transition-input">
+                            <input type="text" placeholder="From State" value="q0">
+                            <input type="text" placeholder="Input Symbol" value="a">
+                            <input type="text" placeholder="To State" value="q1">
+                            <button class="remove-transition" onclick="removeTransition(this)">Remove</button>
+                        </div>
+                        <div class="transition-input">
+                            <input type="text" placeholder="From State" value="q1">
+                            <input type="text" placeholder="Input Symbol" value="b">
+                            <input type="text" placeholder="To State" value="q2">
+                            <button class="remove-transition" onclick="removeTransition(this)">Remove</button>
+                        </div>
+                    </div>
+                    <button class="add-transition" onclick="addTransition()">Add Transition</button>
+                </div>
+            </div>
+
+            <button onclick="generateAutomataNFA()">Generate Automata NFA</button>
+            <button onclick="loadAutomataSample()">Load Sample Data</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <script>
+        const { Document, Packer, Paragraph, TextRun, AlignmentType, DocxTable, DocxTableRow, DocxTableCell, BorderStyle, WidthType } = docx;
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function cleanTextForXML(text) {
+            if (!text) return "";
+            return text
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+                .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function generateAdminNFA() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Generating Administrative NFA DOCX...';
+            
+            try {
+                const subject = cleanTextForXML(document.getElementById('admin-subject').value);
+                const summary = cleanTextForXML(document.getElementById('admin-summary').value);
+                const nfaType = document.getElementById('admin-type').value;
+                const needBullets = document.getElementById('admin-bullets').value === 'yes';
+                
+                console.log('📝 Generating Administrative NFA with:', { subject, summary, nfaType, needBullets });
+                
+                // Generate content based on inputs
+                let content = `${subject}\n\nRequest for approval regarding ${summary}. This proposal requires administrative approval for successful execution.`;
+                
+                if (needBullets) {
+                    content += `\n\n• The event will promote community engagement and collaboration among participants\n• Proper administrative procedures will be followed for event coordination\n• All necessary approvals and permissions will be obtained before the event`;
+                }
+                
+                if (nfaType === 'advance') {
+                    content += `\n\nThe above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly.`;
+                } else {
+                    content += `\n\nThe above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`;
+                }
+                
+                const cleanContent = cleanTextForXML(content);
+
+                // Create document with proper structure
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            // Date - Right aligned
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: `Date: ${new Date().toLocaleDateString('en-GB').replace(/[^\x20-\x7E]/g, '')}`,
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.RIGHT,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // NFA Title - Centered
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Note For Approval (NFA)",
+                                        bold: true,
+                                        size: 22,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.CENTER,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // Content paragraphs
+                            ...createAdminParagraphs(cleanContent),
+                            
+                            // Financial table
+                            ...createFinancialTable(),
+                            
+                            // Signature section
+                            ...createSignatureSection(),
+                        ],
+                    }],
+                });
+
+                console.log('📝 Document structure created successfully');
+
+                // Generate and download the document
+                const blob = await Packer.toBlob(doc);
+                const fileName = `NFA_Document_${new Date().toISOString().slice(0, 10)}.docx`;
+                
+                saveAs(blob, fileName);
+
+                resultDiv.innerHTML = `<div class="result success">✅ Administrative NFA DOCX generated successfully!\n\nFile: ${fileName}\nSize: ${blob.size} bytes\n\nThis DOCX file should open correctly in Microsoft Word.</div>`;
+                
+            } catch (error) {
+                console.error('❌ DOCX generation failed:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ DOCX generation failed\n\nError: ${error.message}</div>`;
+            }
+        }
+
+        function generateAutomataNFA() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Generating Automata Theory NFA DOCX...';
+            
+            try {
+                const title = cleanTextForXML(document.getElementById('automata-title').value);
+                const description = cleanTextForXML(document.getElementById('automata-description').value);
+                const alphabet = document.getElementById('automata-alphabet').value.split(',').map(s => s.trim());
+                const states = document.getElementById('automata-states').value.split(',').map(s => s.trim());
+                const startState = cleanTextForXML(document.getElementById('automata-start').value);
+                const finalStates = document.getElementById('automata-final').value.split(',').map(s => s.trim());
+                
+                // Get transitions
+                const transitions = [];
+                document.querySelectorAll('#transitions-container .transition-input').forEach(input => {
+                    const inputs = input.querySelectorAll('input');
+                    if (inputs[0].value && inputs[1].value && inputs[2].value) {
+                        transitions.push({
+                            from: cleanTextForXML(inputs[0].value),
+                            symbol: cleanTextForXML(inputs[1].value),
+                            to: cleanTextForXML(inputs[2].value)
+                        });
+                    }
+                });
+                
+                console.log('📝 Generating Automata NFA with:', { title, description, alphabet, states, startState, finalStates, transitions });
+
+                // Create document with proper structure
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: "portrait",
+                                    width: 595,
+                                    height: 842,
+                                },
+                                margin: {
+                                    top: 720,
+                                    right: 720,
+                                    bottom: 720,
+                                    left: 720,
+                                },
+                            },
+                        },
+                        children: [
+                            // Date - Right aligned
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: `Date: ${new Date().toLocaleDateString('en-GB').replace(/[^\x20-\x7E]/g, '')}`,
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.RIGHT,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // NFA Title - Centered
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: title,
+                                        bold: true,
+                                        size: 22,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.CENTER,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // Description
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: description,
+                                        size: 20,
+                                        font: "Arial",
+                                    }),
+                                ],
+                                alignment: AlignmentType.JUSTIFY,
+                                spacing: { after: 300 },
+                            }),
+                            
+                            // NFA Definition
+                            ...createAutomataDefinition(alphabet, states, startState, finalStates, transitions),
+                            
+                            // Transition Table
+                            ...createTransitionTable(transitions),
+                        ],
+                    }],
+                });
+
+                console.log('📝 Document structure created successfully');
+
+                // Generate and download the document
+                const blob = await Packer.toBlob(doc);
+                const fileName = `NFA_Document_${new Date().toISOString().slice(0, 10)}.docx`;
+                
+                saveAs(blob, fileName);
+
+                resultDiv.innerHTML = `<div class="result success">✅ Automata Theory NFA DOCX generated successfully!\n\nFile: ${fileName}\nSize: ${blob.size} bytes\n\nThis DOCX file should open correctly in Microsoft Word.</div>`;
+                
+            } catch (error) {
+                console.error('❌ DOCX generation failed:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ DOCX generation failed\n\nError: ${error.message}</div>`;
+            }
+        }
+
+        function createAdminParagraphs(content) {
+            const paragraphs = [];
+            const lines = content.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (!line) {
+                    paragraphs.push(new Paragraph({
+                        children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                const cleanLine = cleanTextForXML(line);
+                if (!cleanLine) continue;
+                
+                // Subject line
+                if (cleanLine.toLowerCase().startsWith('subject:')) {
+                    const subjectText = cleanLine.substring(8).trim();
+                    paragraphs.push(new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Subject: ",
+                                bold: true,
+                                size: 20,
+                                font: "Arial",
+                            }),
+                            new TextRun({
+                                text: subjectText.replace(/[^\x20-\x7E]/g, ''),
+                                size: 20,
+                                font: "Arial",
+                            }),
+                        ],
+                        alignment: AlignmentType.JUSTIFY,
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                // Bullet points
+                if (cleanLine.startsWith('•')) {
+                    const bulletText = cleanLine.substring(1).trim();
+                    paragraphs.push(new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "• ",
+                                size: 20,
+                                font: "Arial",
+                            }),
+                            new TextRun({
+                                text: bulletText.replace(/[^\x20-\x7E]/g, ''),
+                                size: 20,
+                                font: "Arial",
+                            }),
+                        ],
+                        alignment: AlignmentType.JUSTIFY,
+                        spacing: { after: 200 },
+                    }));
+                    continue;
+                }
+                
+                // Regular paragraphs
+                paragraphs.push(new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: cleanLine.replace(/[^\x20-\x7E]/g, ''),
+                            size: 20,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }));
+            }
+            
+            return paragraphs;
+        }
+
+        function createFinancialTable() {
+            const table = new DocxTable({
+                rows: [
+                    new DocxTableRow({
+                        children: [
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "slno", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "item", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "unit", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "total", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                        ],
+                    }),
+                    new DocxTableRow({
+                        children: [
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "1", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "prize", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "2", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "20", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                        ],
+                    }),
+                    new DocxTableRow({
+                        children: [
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "Total", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "", size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "60", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                        ],
+                    }),
+                ],
+                width: {
+                    size: 100,
+                    type: WidthType.PERCENTAGE,
+                },
+            });
+
+            return [
+                new Paragraph({
+                    children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                table,
+            ];
+        }
+
+        function createSignatureSection() {
+            return [
+                new Paragraph({
+                    children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Dr Phani Kumar Pullela, Dean, Student Affairs (Prepared by)",
+                            size: 18,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Dr Sahana D Gowda, Registrar - RV University (Recommended by)",
+                            size: 18,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Mr Chandrasekhar KN, Head Finance (Approved by)",
+                            size: 18,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Prof (Dr) Dwarika Prasad Uniyal, Vice Chancellor (i/c) (Approved by)",
+                            size: 18,
+                            font: "Arial",
+                        }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                }),
+            ];
+        }
+
+        function createAutomataDefinition(alphabet, states, startState, finalStates, transitions) {
+            return [
+                new Paragraph({
+                    children: [new TextRun({ text: "NFA Definition:", bold: true, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [new TextRun({ text: `Alphabet (Σ): {${alphabet.join(', ')}}`, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [new TextRun({ text: `States (Q): {${states.join(', ')}}`, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [new TextRun({ text: `Start State: ${startState}`, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                new Paragraph({
+                    children: [new TextRun({ text: `Final States (F): {${finalStates.join(', ')}}`, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+            ];
+        }
+
+        function createTransitionTable(transitions) {
+            if (transitions.length === 0) return [];
+
+            const table = new DocxTable({
+                rows: [
+                    new DocxTableRow({
+                        children: [
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "From State", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "Input Symbol", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: "To State", bold: true, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                        ],
+                    }),
+                    ...transitions.map(transition => new DocxTableRow({
+                        children: [
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: transition.from, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: transition.symbol, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                            new DocxTableCell({
+                                children: [new Paragraph({
+                                    children: [new TextRun({ text: transition.to, size: 20, font: "Arial" })],
+                                    alignment: AlignmentType.CENTER,
+                                })],
+                            }),
+                        ],
+                    })),
+                ],
+                width: {
+                    size: 100,
+                    type: WidthType.PERCENTAGE,
+                },
+            });
+
+            return [
+                new Paragraph({
+                    children: [new TextRun({ text: "Transition Table:", bold: true, size: 20, font: "Arial" })],
+                    spacing: { after: 200 },
+                }),
+                table,
+            ];
+        }
+
+        function addTransition() {
+            const container = document.getElementById('transitions-container');
+            const newTransition = document.createElement('div');
+            newTransition.className = 'transition-input';
+            newTransition.innerHTML = `
+                <input type="text" placeholder="From State">
+                <input type="text" placeholder="Input Symbol">
+                <input type="text" placeholder="To State">
+                <button class="remove-transition" onclick="removeTransition(this)">Remove</button>
+            `;
+            container.appendChild(newTransition);
+        }
+
+        function removeTransition(button) {
+            button.parentElement.remove();
+        }
+
+        function loadAdminSample() {
+            document.getElementById('admin-subject').value = 'Chess By Panchatantra';
+            document.getElementById('admin-summary').value = 'RVU clubs combined celebrate the event Chess By Panchatantra in the RV University Campus. This proposal requires administrative approval for successful execution.';
+            document.getElementById('admin-type').value = 'reimbursement';
+            document.getElementById('admin-bullets').value = 'yes';
+        }
+
+        function loadAutomataSample() {
+            document.getElementById('automata-title').value = 'NFA for Language Recognition';
+            document.getElementById('automata-description').value = 'This NFA recognizes strings that start with \'a\' and end with \'b\'';
+            document.getElementById('automata-alphabet').value = 'a, b';
+            document.getElementById('automata-states').value = 'q0, q1, q2';
+            document.getElementById('automata-start').value = 'q0';
+            document.getElementById('automata-final').value = 'q2';
+        }
+
+        // Auto-run on page load
+        window.onload = function() {
+            console.log('🔧 NFA Document Generator Loaded');
+            console.log('Switch between Administrative NFA and Automata Theory NFA tabs');
+        };
+    </script>
+</body>
+</html>

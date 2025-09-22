@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Subject in Preview</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Test Subject in Preview</h1>
+    <p>This test verifies that the subject line appears in the preview.</p>
+    
+    <div>
+        <button onclick="testSubjectPreview()">Test Subject in Preview</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Results:</h3>
+        <div id="test-results" class="content-display">Click the test button to see the results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const testResultsDiv = document.getElementById('test-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        function analyzeSubjectInPreview(content, testName) {
+            const analysis = [];
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            analysis.push(`=== ${testName} Analysis ===`);
+            analysis.push("");
+            
+            // Check 1: Subject line presence
+            const subjectLines = lines.filter(line => line.toLowerCase().includes('subject:'));
+            if (subjectLines.length >= 1) {
+                analysis.push(`✅ PASS: Found ${subjectLines.length} subject line(s)`);
+                analysis.push(`   Subject: ${subjectLines[0]}`);
+            } else {
+                analysis.push("❌ FAIL: No subject line found in preview");
+            }
+            
+            // Check 2: Subject content
+            const hasChessSubject = content.toLowerCase().includes('chess');
+            const hasPanchatantraSubject = content.toLowerCase().includes('panchatantra');
+            
+            if (hasChessSubject && hasPanchatantraSubject) {
+                analysis.push("✅ PASS: Subject contains 'Chess By Panchatantra' content");
+            } else {
+                analysis.push("⚠️ WARNING: Subject may not contain expected content");
+            }
+            
+            // Check 3: Content structure
+            const hasHeader = content.includes('RV UNIVERSITY');
+            const hasDate = content.includes('Date:');
+            const hasNfaTitle = content.includes('Note For Approval (NFA)');
+            const hasSubject = content.includes('Subject:');
+            const hasRequest = content.includes('Request for approval regarding');
+            const hasSignatures = content.includes('Dr Phani Kumar Pullela');
+            
+            let structureScore = 0;
+            if (hasHeader) structureScore++;
+            if (hasDate) structureScore++;
+            if (hasNfaTitle) structureScore++;
+            if (hasSubject) structureScore++;
+            if (hasRequest) structureScore++;
+            if (hasSignatures) structureScore++;
+            
+            analysis.push(`✅ PASS: Preview structure complete (${structureScore}/6 components)`);
+            
+            // Check 4: Table presence
+            const hasTable = content.includes('Financial/Resource Implications Table:');
+            if (hasTable) {
+                analysis.push("✅ PASS: Table data is present in preview");
+            } else {
+                analysis.push("⚠️ WARNING: No table data found in preview");
+            }
+            
+            // Overall assessment
+            const passCount = (analysis.join('\n').match(/✅ PASS/g) || []).length;
+            const failCount = (analysis.join('\n').match(/❌ FAIL/g) || []).length;
+            const warnCount = (analysis.join('\n').match(/⚠️ WARNING/g) || []).length;
+            
+            analysis.push("");
+            analysis.push(`=== OVERALL ASSESSMENT ===`);
+            analysis.push(`Passed: ${passCount} requirements`);
+            analysis.push(`Failed: ${failCount} requirements`);
+            analysis.push(`Warnings: ${warnCount} issues`);
+            
+            if (failCount === 0 && warnCount === 0) {
+                analysis.push("🎉 PERFECT: Subject appears correctly in preview!");
+            } else if (failCount === 0) {
+                analysis.push("✅ GOOD: Subject appears, minor warnings");
+            } else {
+                analysis.push("❌ FAILED: Subject not appearing correctly");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        async function testSubjectPreview() {
+            try {
+                log("🔄 Testing subject in preview...", 'info');
+                
+                const requestData = {
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club on 5th September 2025 at RV University Campus. The event will feature competitive chess matches among students and faculty, promoting strategic thinking and community engagement through chess activities.",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                console.log("📤 Sending test request:", requestData);
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                console.log("📥 Test response:", result);
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeSubjectInPreview(content, "Subject in Preview Test");
+                    
+                    testResultsDiv.textContent = `Generated Content:\n${content}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Overall assessment
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    const warnCount = (analysis.match(/⚠️ WARNING/g) || []).length;
+                    
+                    if (failCount === 0 && warnCount === 0) {
+                        log(`🎉 PERFECT: Subject appears correctly in preview!`, 'success');
+                    } else if (failCount === 0) {
+                        log(`✅ GOOD: Subject appears, ${warnCount} minor warnings`, 'success');
+                    } else {
+                        log(`❌ FAILED: Subject not appearing correctly`, 'error');
+                    }
+                    
+                } else {
+                    throw new Error(result.error || "Test generation failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing subject preview: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

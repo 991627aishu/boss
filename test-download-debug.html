@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFA Download Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 NFA Download Debug Test</h1>
+        <p>This test will help identify exactly what's wrong with the NFA download to DOCX functionality.</p>
+
+        <div class="test-section">
+            <h3>1. Backend Health Check</h3>
+            <button onclick="testBackendHealth()">Test Backend Health</button>
+            <div id="health-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Download Endpoint Directly</h3>
+            <button onclick="testDownloadEndpoint()">Test /api/download-edited-nfa</button>
+            <div id="download-endpoint-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test File Generation</h3>
+            <button onclick="testFileGeneration()">Generate Test DOCX File</button>
+            <div id="file-generation-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Test File Download</h3>
+            <button onclick="testFileDownload()" id="download-btn" disabled>Download Generated File</button>
+            <div id="file-download-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Test Static File Serving</h3>
+            <button onclick="testStaticServing()">Test Static File Serving</button>
+            <div id="static-serving-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Debug Summary</h3>
+            <div id="debug-summary">
+                <p>Run the tests above to see detailed debug information...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let lastGeneratedFile = null;
+        let lastGeneratedFileName = null;
+
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = 'Testing backend health...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<div class="result success">✅ Backend is healthy\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Backend not healthy\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Connection failed: ${error.message}\n\nMake sure the backend server is running on port 5000</div>`;
+            }
+        }
+
+        async function testDownloadEndpoint() {
+            const resultDiv = document.getElementById('download-endpoint-result');
+            resultDiv.innerHTML = 'Testing download endpoint...';
+            
+            const testData = {
+                editedText: `Subject: Test NFA Document
+
+Request for approval regarding test document generation. This is a test to verify the download functionality works correctly.
+
+• The test will verify document generation
+• Proper formatting and structure will be maintained
+• Download functionality will be tested thoroughly
+
+The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`,
+                subject: "Test NFA Document",
+                summary: "Test document for download verification",
+                nfaType: "reimbursement",
+                tableData: [
+                    ["Item", "Quantity", "Unit Cost", "Total Cost"],
+                    ["Test Item 1", "5", "₹100", "₹500"],
+                    ["Test Item 2", "3", "₹200", "₹600"]
+                ]
+            };
+            
+            try {
+                console.log('📤 Sending request to download endpoint:', testData);
+                
+                const response = await fetch(`${API_BASE}/api/download-edited-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('📥 Response status:', response.status);
+                console.log('📥 Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('📥 Response data:', data);
+                
+                if (data.success) {
+                    if (data.filePath && data.fileName) {
+                        lastGeneratedFile = data.filePath;
+                        lastGeneratedFileName = data.fileName;
+                        document.getElementById('download-btn').disabled = false;
+                        
+                        resultDiv.innerHTML = `<div class="result success">✅ Download endpoint working!\n\nFile Path: ${data.filePath}\nFile Name: ${data.fileName}\nMessage: ${data.message}</div>`;
+                    } else {
+                        resultDiv.innerHTML = `<div class="result info">⚠️ Download endpoint responded but no file generated\n\nResponse: ${JSON.stringify(data, null, 2)}\n\nThis might be fallback mode - Python/DOCX generation unavailable</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Download endpoint failed\n\nError: ${data.error}\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Download endpoint test failed\n\nError: ${error.message}\n\nCheck console for more details</div>`;
+                console.error('Download endpoint test error:', error);
+            }
+        }
+
+        async function testFileGeneration() {
+            const resultDiv = document.getElementById('file-generation-result');
+            resultDiv.innerHTML = 'Testing file generation...';
+            
+            // First generate an NFA
+            const generateData = {
+                subject: "Test NFA Document",
+                summary: "Test document for download verification",
+                bulletsRequired: true,
+                nfaType: "reimbursement",
+                tableData: [
+                    ["Item", "Quantity", "Unit Cost", "Total Cost"],
+                    ["Test Item 1", "5", "₹100", "₹500"],
+                    ["Test Item 2", "3", "₹200", "₹600"]
+                ]
+            };
+            
+            try {
+                console.log('📤 Generating NFA first...');
+                
+                const generateResponse = await fetch(`${API_BASE}/api/generate-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(generateData)
+                });
+                
+                const generateData_result = await generateResponse.json();
+                console.log('📥 Generate response:', generateData_result);
+                
+                if (generateData_result.success && generateData_result.nfaText) {
+                    // Now test download with the generated content
+                    const downloadData = {
+                        editedText: generateData_result.nfaText,
+                        subject: "Test NFA Document",
+                        summary: "Test document for download verification",
+                        nfaType: "reimbursement",
+                        tableData: generateData.tableData
+                    };
+                    
+                    console.log('📤 Now testing download with generated content...');
+                    
+                    const downloadResponse = await fetch(`${API_BASE}/api/download-edited-nfa`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(downloadData)
+                    });
+                    
+                    const downloadResult = await downloadResponse.json();
+                    console.log('📥 Download response:', downloadResult);
+                    
+                    if (downloadResult.success && downloadResult.filePath && downloadResult.fileName) {
+                        lastGeneratedFile = downloadResult.filePath;
+                        lastGeneratedFileName = downloadResult.fileName;
+                        document.getElementById('download-btn').disabled = false;
+                        
+                        resultDiv.innerHTML = `<div class="result success">✅ File generation successful!\n\nGenerated File: ${downloadResult.fileName}\nFile Path: ${downloadResult.filePath}\nMessage: ${downloadResult.message}</div>`;
+                    } else {
+                        resultDiv.innerHTML = `<div class="result error">❌ File generation failed\n\nResponse: ${JSON.stringify(downloadResult, null, 2)}</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ NFA generation failed\n\nResponse: ${JSON.stringify(generateData_result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ File generation test failed\n\nError: ${error.message}</div>`;
+                console.error('File generation test error:', error);
+            }
+        }
+
+        async function testFileDownload() {
+            const resultDiv = document.getElementById('file-download-result');
+            resultDiv.innerHTML = 'Testing file download...';
+            
+            if (!lastGeneratedFile) {
+                resultDiv.innerHTML = '<div class="result error">❌ No file to download. Generate a file first.</div>';
+                return;
+            }
+            
+            const downloadUrl = `${API_BASE}${lastGeneratedFile}`;
+            console.log('🔗 Testing download from:', downloadUrl);
+            
+            try {
+                // Test 1: Check if file exists
+                resultDiv.innerHTML = `Testing download from: ${downloadUrl}\n\n`;
+                
+                const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
+                console.log('📥 HEAD response:', headResponse.status, headResponse.headers);
+                
+                if (!headResponse.ok) {
+                    throw new Error(`File not found: ${headResponse.status} ${headResponse.statusText}`);
+                }
+                
+                resultDiv.innerHTML += `<div class="result success">✅ File exists on server (${headResponse.status})</div>\n`;
+                
+                // Test 2: Try different download methods
+                let downloadSuccess = false;
+                
+                // Method 1: Direct link download
+                try {
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = lastGeneratedFileName || `test-download-${Date.now()}.docx`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    resultDiv.innerHTML += `<div class="result success">✅ Method 1: Direct download initiated</div>\n`;
+                    downloadSuccess = true;
+                } catch (error) {
+                    resultDiv.innerHTML += `<div class="result error">❌ Method 1 failed: ${error.message}</div>\n`;
+                }
+                
+                // Method 2: Fetch and blob download
+                if (!downloadSuccess) {
+                    try {
+                        const response = await fetch(downloadUrl);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        
+                        const blob = await response.blob();
+                        console.log('📦 Blob created:', blob.size, 'bytes, type:', blob.type);
+                        
+                        const url = window.URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = lastGeneratedFileName || `test-download-blob-${Date.now()}.docx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        window.URL.revokeObjectURL(url);
+                        
+                        resultDiv.innerHTML += `<div class="result success">✅ Method 2: Blob download successful (${blob.size} bytes)</div>\n`;
+                        downloadSuccess = true;
+                    } catch (error) {
+                        resultDiv.innerHTML += `<div class="result error">❌ Method 2 failed: ${error.message}</div>\n`;
+                    }
+                }
+                
+                // Method 3: Window open
+                if (!downloadSuccess) {
+                    try {
+                        window.open(downloadUrl, '_blank');
+                        resultDiv.innerHTML += `<div class="result success">✅ Method 3: Opened in new tab</div>\n`;
+                        downloadSuccess = true;
+                    } catch (error) {
+                        resultDiv.innerHTML += `<div class="result error">❌ Method 3 failed: ${error.message}</div>\n`;
+                    }
+                }
+                
+                if (downloadSuccess) {
+                    resultDiv.innerHTML += `<div class="result success">🎉 Download test completed successfully!</div>`;
+                } else {
+                    resultDiv.innerHTML += `<div class="result error">❌ All download methods failed</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="result error">❌ Download test failed: ${error.message}</div>`;
+                console.error('Download test error:', error);
+            }
+        }
+
+        async function testStaticServing() {
+            const resultDiv = document.getElementById('static-serving-result');
+            resultDiv.innerHTML = 'Testing static file serving...';
+            
+            try {
+                // Test if the static file serving is working
+                const testUrls = [
+                    '/generated_letters/nfa/',
+                    '/downloads/',
+                    '/uploads/'
+                ];
+                
+                let results = [];
+                
+                for (const url of testUrls) {
+                    try {
+                        const response = await fetch(`${API_BASE}${url}`, { method: 'HEAD' });
+                        results.push(`${url}: ${response.status} ${response.statusText}`);
+                    } catch (error) {
+                        results.push(`${url}: Error - ${error.message}`);
+                    }
+                }
+                
+                resultDiv.innerHTML = `<div class="result info">Static file serving test:\n\n${results.join('\n')}</div>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Static serving test failed: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-run health check on page load
+        window.onload = function() {
+            console.log('🔍 NFA Download Debug Test Page Loaded');
+            testBackendHealth();
+        };
+    </script>
+</body>
+</html>
