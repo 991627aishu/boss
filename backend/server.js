@@ -41,8 +41,13 @@ app.get("/api/test-python", (req, res) => {
   try {
     const pythonScript = path.join(__dirname, 'python', 'test_simple.py');
     
+<<<<<<< HEAD
     // Try different Python commands - prioritize 'python' on Windows
     const pythonCommands = ['python', 'python3', 'py'];
+=======
+    // Try different Python commands
+    const pythonCommands = ['python3', 'python', 'py'];
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     let pythonProcess = null;
     let pythonCommand = null;
     
@@ -163,8 +168,13 @@ The above proposal is submitted for approval, and the amount may kindly be reimb
     
     console.log("🐍 Running Python script:", pythonScript, "with args:", args);
     
+<<<<<<< HEAD
     // Try different Python commands - prioritize 'python' on Windows
     const pythonCommands = ['python', 'python3', 'py'];
+=======
+    // Try different Python commands
+    const pythonCommands = ['python3', 'python', 'py'];
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     let pythonProcess = null;
     let pythonCommand = null;
     
@@ -292,8 +302,13 @@ app.post("/api/edit-nfa", (req, res) => {
     
     console.log("🐍 Running Python script for edit:", pythonScript, "with args:", args);
     
+<<<<<<< HEAD
     // Try different Python commands - prioritize 'python' on Windows
     const pythonCommands = ['python', 'python3', 'py'];
+=======
+    // Try different Python commands
+    const pythonCommands = ['python3', 'python', 'py'];
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     let pythonProcess = null;
     let pythonCommand = null;
     
@@ -368,6 +383,21 @@ app.post("/api/download-edited-nfa", (req, res) => {
   
   const { editedText, subject, summary, nfaType, tableData } = req.body;
   
+<<<<<<< HEAD
+=======
+  // Fallback response for download mode
+  const createDownloadFallbackResponse = () => {
+    return {
+      success: true,
+      message: "Download ready (fallback mode - Python unavailable)",
+      filePath: null,
+      fileName: null,
+      downloadUrl: null,
+      note: "DOCX generation unavailable in fallback mode. Content is available in preview."
+    };
+  };
+  
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
   try {
     const pythonScript = path.join(__dirname, 'python', 'generate_nfa_automation.py');
     const args = [
@@ -381,8 +411,13 @@ app.post("/api/download-edited-nfa", (req, res) => {
     
     console.log("🐍 Running Python script for download:", pythonScript, "with args:", args);
     
+<<<<<<< HEAD
     // Try different Python commands - prioritize 'python' on Windows
     const pythonCommands = ['python', 'python3', 'py'];
+=======
+    // Try different Python commands
+    const pythonCommands = ['python3', 'python', 'py'];
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     let pythonProcess = null;
     let pythonCommand = null;
     
@@ -429,6 +464,7 @@ app.post("/api/download-edited-nfa", (req, res) => {
           res.json(result);
         } catch (parseError) {
           console.error("❌ Error parsing Python download output:", parseError);
+<<<<<<< HEAD
           console.error("❌ Raw stdout:", stdout);
           res.status(500).json({ 
             success: false, 
@@ -436,10 +472,17 @@ app.post("/api/download-edited-nfa", (req, res) => {
             details: `Parse error: ${parseError.message}. Raw output: ${stdout.substring(0, 200)}`,
             stdout: stdout,
             stderr: stderr
+=======
+          res.status(500).json({ 
+            success: false, 
+            error: "Failed to parse Python script output",
+            details: parseError.message 
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
           });
         }
       } else {
         console.error("❌ Python download script failed with code:", code);
+<<<<<<< HEAD
         console.error("❌ Full stderr:", stderr);
         console.error("❌ Full stdout:", stdout);
         
@@ -470,11 +513,17 @@ app.post("/api/download-edited-nfa", (req, res) => {
           stderr: stderr,
           pythonCommand: pythonCommand
         });
+=======
+        console.log("🔄 Python download failed, trying fallback response...");
+        const fallbackResponse = createDownloadFallbackResponse();
+        res.json(fallbackResponse);
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
       }
     });
     
   } catch (error) {
     console.error("❌ Error running Python download script:", error);
+<<<<<<< HEAD
     res.status(500).json({ 
       success: false, 
       error: "Failed to run Python script",
@@ -486,6 +535,14 @@ app.post("/api/download-edited-nfa", (req, res) => {
 });
 
 
+=======
+    console.log("🔄 Python download error, trying fallback response...");
+    const fallbackResponse = createDownloadFallbackResponse();
+    res.json(fallbackResponse);
+  }
+});
+
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 // ✅ Test Python script
 app.get("/api/test-python", (req, res) => {
   console.log("🧪 Testing Python script...");
@@ -532,7 +589,10 @@ app.get("/api/test-python", (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 app.listen(PORT, () => {
   console.log(`✅ Backend server running on http://localhost:${PORT}`);
   console.log(`📁 Serving static files from: ${path.join(__dirname, 'downloads')}`);

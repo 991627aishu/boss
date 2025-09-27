@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Listening to User Requests</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Test AI Listening to User Requests</h1>
+    <p>This test verifies that the AI chatbox actually listens to and applies user requests correctly.</p>
+    
+    <div>
+        <button onclick="testSubjectChange()">Test Subject Change</button>
+        <button onclick="testContentChange()">Test Content Change</button>
+        <button onclick="testMultipleRequests()">Test Multiple Requests</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Results:</h3>
+        <div id="test-results" class="content-display">Click a test button to see the results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const testResultsDiv = document.getElementById('test-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        async function generateInitialNFA() {
+            const requestData = {
+                subject: "Chess By Panchatantra",
+                summary: "Chess tournament organized by Panchatantra club on 5th September 2025 at RV University Campus. The event will feature competitive chess matches among students and faculty, promoting strategic thinking and community engagement through chess activities.",
+                nfaType: "reimbursement",
+                bulletsRequired: true,
+                tableData: [
+                    ["slno", "item", "unit", "total"],
+                    ["1", "prize", "2", "20"],
+                    ["2", "prize", "2", "20"],
+                    ["3", "prize", "2", "20"],
+                    ["Total", "", "", "60"]
+                ]
+            };
+            
+            const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            });
+            
+            const result = await response.json();
+            return result;
+        }
+        
+        async function testSubjectChange() {
+            try {
+                log("🔄 Testing if AI listens to subject change requests...", 'info');
+                
+                // Generate initial NFA
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                console.log("📄 Original content:", originalContent.substring(0, 200) + "...");
+                
+                // Test subject change - exactly like the user in the image
+                const editRequest = {
+                    text: originalContent,
+                    prompt: "Change Subject as Chess Event",
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                console.log("📤 Sending subject change request:", editRequest);
+                
+                const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(editRequest),
+                });
+                
+                const editResult = await editResponse.json();
+                console.log("📥 Subject change response:", editResult);
+                
+                if (editResult.success) {
+                    const updatedContent = editResult.editedText;
+                    
+                    // Analyze if the AI actually listened
+                    const analysis = analyzeAIListening(originalContent, updatedContent, "Subject Change Test", "Chess Event");
+                    
+                    testResultsDiv.textContent = `Original Content:\n${originalContent}\n\n--- UPDATED CONTENT ---\n\n${updatedContent}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Check if AI actually changed the subject
+                    const hasChessEvent = updatedContent.toLowerCase().includes('chess event');
+                    const hasOldSubject = updatedContent.toLowerCase().includes('chess by panchatantra');
+                    const subjectLine = updatedContent.match(/Subject:\s*([^\n]+)/i);
+                    
+                    if (hasChessEvent && !hasOldSubject && subjectLine && subjectLine[1].toLowerCase().includes('chess event')) {
+                        log("🎉 PERFECT: AI listened and changed subject to 'Chess Event'", 'success');
+                    } else if (hasChessEvent) {
+                        log("✅ GOOD: AI partially listened - 'Chess Event' found but may not be in subject line", 'success');
+                    } else {
+                        log("❌ FAILED: AI did not listen - subject not changed to 'Chess Event'", 'error');
+                    }
+                    
+                } else {
+                    throw new Error(editResult.error || "Subject change request failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing subject change: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testContentChange() {
+            try {
+                log("🔄 Testing if AI listens to content change requests...", 'info');
+                
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                
+                // Test content change
+                const editRequest = {
+                    text: originalContent,
+                    prompt: "Change all content to be about a science fair instead of chess",
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(editRequest),
+                });
+                
+                const editResult = await editResponse.json();
+                
+                if (editResult.success) {
+                    const updatedContent = editResult.editedText;
+                    const analysis = analyzeAIListening(originalContent, updatedContent, "Content Change Test", "science fair");
+                    
+                    testResultsDiv.textContent = `Original Content:\n${originalContent}\n\n--- UPDATED CONTENT ---\n\n${updatedContent}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Check if AI actually changed the content
+                    const hasScienceContent = updatedContent.toLowerCase().includes('science') || updatedContent.toLowerCase().includes('fair');
+                    const hasChessContent = updatedContent.toLowerCase().includes('chess');
+                    const isCompletelyDifferent = originalContent !== updatedContent;
+                    
+                    if (hasScienceContent && !hasChessContent && isCompletelyDifferent) {
+                        log("🎉 PERFECT: AI listened and changed content to science fair", 'success');
+                    } else if (hasScienceContent && isCompletelyDifferent) {
+                        log("✅ GOOD: AI listened and added science content", 'success');
+                    } else {
+                        log("❌ FAILED: AI did not listen - content not changed to science fair", 'error');
+                    }
+                    
+                } else {
+                    throw new Error(editResult.error || "Content change request failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing content change: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testMultipleRequests() {
+            try {
+                log("🔄 Testing if AI listens to multiple sequential requests...", 'info');
+                
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                let currentContent = initialResult.nfaText;
+                let allResults = `Initial Content:\n${currentContent}\n\n`;
+                
+                const requests = [
+                    {
+                        name: "Subject Change",
+                        prompt: "Change subject to Sports Event",
+                        expected: "sports event"
+                    },
+                    {
+                        name: "Content Change", 
+                        prompt: "Change all content to be about a music concert",
+                        expected: "music concert"
+                    },
+                    {
+                        name: "Final Change",
+                        prompt: "Change to workshop on artificial intelligence",
+                        expected: "workshop"
+                    }
+                ];
+                
+                for (let i = 0; i < requests.length; i++) {
+                    const request = requests[i];
+                    
+                    const editRequest = {
+                        text: currentContent,
+                        prompt: request.prompt,
+                        subject: "Chess By Panchatantra",
+                        summary: "Chess tournament organized by Panchatantra club",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                    };
+                    
+                    const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(editRequest),
+                    });
+                    
+                    const editResult = await editResponse.json();
+                    
+                    if (editResult.success) {
+                        currentContent = editResult.editedText;
+                        allResults += `After ${request.name}:\n${currentContent}\n\n`;
+                        
+                        // Check if this request was applied
+                        const hasExpectedContent = currentContent.toLowerCase().includes(request.expected);
+                        if (hasExpectedContent) {
+                            allResults += `✅ ${request.name}: AI listened and applied request\n\n`;
+                        } else {
+                            allResults += `❌ ${request.name}: AI did not listen to request\n\n`;
+                        }
+                    } else {
+                        allResults += `❌ ${request.name}: Request failed - ${editResult.error}\n\n`;
+                    }
+                }
+                
+                const analysis = analyzeAIListening(initialResult.nfaText, currentContent, "Multiple Requests Test", "workshop");
+                allResults += `--- FINAL ANALYSIS ---\n\n${analysis}`;
+                
+                testResultsDiv.textContent = allResults;
+                
+                // Check if AI listened to all requests
+                const hasWorkshopContent = currentContent.toLowerCase().includes('workshop');
+                const hasMusicContent = currentContent.toLowerCase().includes('music');
+                const hasSportsContent = currentContent.toLowerCase().includes('sports');
+                
+                if (hasWorkshopContent) {
+                    log("🎉 PERFECT: AI listened to multiple requests and applied the final one", 'success');
+                } else if (hasMusicContent || hasSportsContent) {
+                    log("✅ GOOD: AI listened to some requests but may not have applied the final one", 'success');
+                } else {
+                    log("❌ FAILED: AI did not listen to multiple requests properly", 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing multiple requests: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function analyzeAIListening(original, updated, testName, expectedContent) {
+            const analysis = [];
+            const originalLength = original.length;
+            const updatedLength = updated.length;
+            
+            analysis.push(`=== ${testName} Analysis ===`);
+            analysis.push("");
+            analysis.push(`Original: ${originalLength} characters`);
+            analysis.push(`Updated: ${updatedLength} characters`);
+            analysis.push(`Change: ${updatedLength - originalLength} characters`);
+            analysis.push("");
+            
+            // Check if AI listened to the request
+            const hasExpectedContent = updated.toLowerCase().includes(expectedContent.toLowerCase());
+            const isContentChanged = original !== updated;
+            
+            if (hasExpectedContent && isContentChanged) {
+                analysis.push("✅ AI LISTENED: Request was understood and applied");
+            } else if (isContentChanged) {
+                analysis.push("⚠️ AI PARTIALLY LISTENED: Content changed but may not match request");
+            } else {
+                analysis.push("❌ AI DID NOT LISTEN: Content unchanged or request not applied");
+            }
+            
+            // Check for specific indicators
+            const subjectLine = updated.match(/Subject:\s*([^\n]+)/i);
+            if (subjectLine) {
+                analysis.push(`Subject Line: "${subjectLine[1].trim()}"`);
+            }
+            
+            // Check for content indicators
+            const contentKeywords = ['chess', 'tournament', 'sports', 'music', 'workshop', 'science', 'fair'];
+            const foundKeywords = contentKeywords.filter(keyword => updated.toLowerCase().includes(keyword));
+            if (foundKeywords.length > 0) {
+                analysis.push(`Content Keywords Found: ${foundKeywords.join(', ')}`);
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

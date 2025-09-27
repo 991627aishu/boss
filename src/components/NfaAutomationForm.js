@@ -32,8 +32,13 @@ import {
 } from "@mui/material";
 import { Download, Send, Add, Delete, Edit, Settings, CloudUpload, TableChart, FileUpload } from "@mui/icons-material";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+<<<<<<< HEAD
 import NfaPreview from "./NfaPreview";
 import { addNfaToHistory } from "../utils/nfaHistory";
+=======
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, WidthType, Table as DocxTable, TableRow as DocxTableRow, TableCell as DocxTableCell, ImageRun } from "docx";
+import { saveAs } from "file-saver";
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 const steps = ['Fill Details', 'Configure Financial Table', 'Generate NFA with AI', 'Download'];
 
@@ -149,6 +154,7 @@ function NfaAutomationForm({ onNfaGenerated }) {
     checkServerConnection();
   }, []);
 
+<<<<<<< HEAD
 
 
 
@@ -160,6 +166,989 @@ function NfaAutomationForm({ onNfaGenerated }) {
 
 
 
+=======
+  // Handle NFA download with client-side DOCX generation
+  const handleDownloadNFA = async () => {
+    try {
+      console.log("📥 Download NFA button clicked - using Python script");
+      setLoading(true);
+      
+      // Generate and download DOCX using Python script
+      await generateDocxWithPython();
+      
+    } catch (error) {
+      console.error("❌ Download error:", error);
+      setError("Failed to download NFA document. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate DOCX using Python script
+  const generateDocxWithPython = async () => {
+    try {
+      console.log("🐍 Generating DOCX using Python script...");
+      
+      const content = editedContent || generatedContent;
+      if (!content) {
+        throw new Error("No content available for download");
+      }
+      
+      // Prepare table data for Python script
+      const tableData = formData.tableHeaders && formData.tableHeaders.length > 0 
+        ? [formData.tableHeaders, ...formData.tableRows]
+        : [];
+      
+      const requestData = {
+        editedText: content,
+        subject: formData.subject || "NFA Request",
+        summary: formData.summary || "NFA Request Summary",
+        nfaType: formData.nfaType || "reimbursement",
+        tableData: tableData
+      };
+      
+      console.log("📤 Sending request to Python script:", requestData);
+      
+      const response = await fetch('http://localhost:5000/api/download-edited-nfa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log("📥 Python script response:", result);
+      
+      if (result.success) {
+        // Check if it's fallback mode (no file available)
+        if (result.filePath && result.fileName) {
+          // Download the generated file
+          await downloadFile(result.filePath, result.fileName);
+        } else {
+          // Fallback mode - generate DOCX using client-side library
+          console.log("📄 Fallback mode: Generating DOCX using client-side library");
+          alert(`Download Info:\n${result.message}\n\nGenerating DOCX using client-side library...`);
+          
+          // Generate DOCX using client-side library as fallback
+          await generateClientSideDocx();
+        }
+      } else {
+        throw new Error(result.error || "Python script failed to generate DOCX");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error generating DOCX with Python:", error);
+      setError(`Failed to generate document: ${error.message}`);
+      throw error;
+    }
+  };
+
+  // Generate DOCX document from preview content - Exact Template Structure
+  const generateClientSideDocx = async () => {
+    try {
+      console.log("📝 Generating template DOCX document with header image...");
+      
+      // Get the current preview content
+      const content = editedContent || generatedContent;
+      console.log("📄 Content available:", !!content);
+      
+      if (!content) {
+        throw new Error("No content available for download");
+      }
+      
+      // Clean and validate content - more aggressive cleaning for XML safety
+      const cleanContent = content
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+        .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '') // Keep only printable characters
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      console.log("🧹 Content cleaned, length:", cleanContent.length);
+      
+      if (!cleanContent) {
+        throw new Error("Content is empty after cleaning");
+      }
+      
+      // Create document with exact template structure
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              size: {
+                orientation: "portrait",
+                width: 595,
+                height: 842,
+              },
+              margin: {
+                top: 720,
+                right: 720,
+                bottom: 720,
+                left: 720,
+              },
+            },
+          },
+          children: [
+            // Header with Image
+            ...(await createHeaderWithImage()),
+            
+            // Date - Right aligned
+            new Paragraph({
+              children: [
+            new TextRun({
+              text: `Date: ${new Date().toLocaleDateString('en-GB').replace(/[^\x20-\x7E]/g, '')}`,
+              size: 20,
+              font: "Arial",
+            }),
+              ],
+              alignment: AlignmentType.RIGHT,
+              spacing: { after: 300 },
+            }),
+            
+            // NFA Title - Centered
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Note For Approval (NFA)",
+                  bold: true,
+                  size: 22,
+                  font: "Arial",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 300 },
+            }),
+            
+            // Content paragraphs
+            ...createTemplateParagraphs(cleanContent),
+            
+            // Table if exists - Proper table structure
+            ...(formData.tableHeaders && formData.tableHeaders.length > 0 ? createProperTable() : []),
+            
+            // Conclusion
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: (formData.nfaType === "advance" 
+                    ? "The above proposal is submitted for approval, and the advance amount may kindly be released to the organizing committee to conduct the event smoothly."
+                    : "The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.").replace(/[^\x20-\x7E]/g, ''),
+                  size: 20,
+                  font: "Arial",
+                }),
+              ],
+              alignment: AlignmentType.JUSTIFY,
+              spacing: {
+                before: 300,
+                after: 300,
+              },
+            }),
+            
+            // Signature layout - 2x2 grid
+            ...createSignatureGrid(),
+          ],
+        }],
+      });
+      
+      console.log("📝 Document structure created successfully");
+      
+      // Generate and download the document
+      console.log("🔄 Converting document to blob...");
+      const blob = await Packer.toBlob(doc);
+      console.log("📦 Blob created, size:", blob.size);
+      
+      const fileName = `nfa_output_${new Date().toISOString().slice(0, 10)}.docx`;
+      console.log("💾 Downloading file:", fileName);
+      
+      saveAs(blob, fileName);
+      
+      console.log("✅ Template DOCX generated and downloaded successfully");
+      setSuccess("NFA document downloaded successfully!");
+      
+    } catch (error) {
+      console.error("❌ Error generating template DOCX:", error);
+      console.error("❌ Error details:", error.stack);
+      setError(`Failed to generate document: ${error.message}`);
+      throw error;
+    }
+  };
+
+  // Create template paragraphs for DOCX matching template structure
+  const createTemplateParagraphs = (content) => {
+    if (!content) return [];
+    
+    const paragraphs = [];
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (!line) {
+        // Empty line
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+          spacing: { after: 200 },
+        }));
+        continue;
+      }
+      
+      // Clean the line to remove any problematic characters - more aggressive cleaning
+      const cleanLine = line
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+        .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '') // Keep only printable characters
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      if (!cleanLine) continue;
+      
+      // Subject line
+      if (cleanLine.toLowerCase().startsWith('subject:')) {
+        const subjectText = cleanLine.substring(8).trim();
+        paragraphs.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: "Subject: ",
+              bold: true,
+              size: 20,
+              font: "Arial",
+            }),
+            new TextRun({
+              text: subjectText.replace(/[^\x20-\x7E]/g, ''),
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 200 },
+        }));
+        continue;
+      }
+      
+      // Bullet points
+      if (cleanLine.startsWith('•')) {
+        const bulletText = cleanLine.substring(1).trim();
+        paragraphs.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: "• ",
+              size: 20,
+              font: "Arial",
+            }),
+            new TextRun({
+              text: bulletText.replace(/[^\x20-\x7E]/g, ''),
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 200 },
+        }));
+        continue;
+      }
+      
+      // Regular paragraphs
+        paragraphs.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: cleanLine.replace(/[^\x20-\x7E]/g, ''),
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+        spacing: { after: 200 },
+      }));
+    }
+    
+    return paragraphs;
+  };
+
+
+
+  // Create simple signatures without complex table structure
+  const createSimpleSignatures = () => {
+    const signatureElements = [];
+    
+    const signatures = [
+      { name: "Dr Phani Kumar Pullela", designation: "Dean, Student Affairs", label: "(Prepared by)" },
+      { name: "Mr Chandrasekhar KN", designation: "Head Finance", label: "(Approved by)" },
+      { name: "Dr Sahana D Gowda", designation: "Registrar - RV University", label: "(Recommended by)" },
+      { name: "Prof (Dr) Dwarika Prasad Uniyal", designation: "Vice Chancellor (i/c)", label: "(Approved by)" }
+    ];
+    
+    signatures.forEach((sig, index) => {
+      // Add spacing between signature groups
+      if (index === 2) {
+        signatureElements.push(new Paragraph({
+          children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+          spacing: { after: 200 },
+        }));
+      }
+      
+      // Signature line
+      signatureElements.push(new Paragraph({
+        children: [
+          new TextRun({
+            text: "_________________",
+            size: 20,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.JUSTIFY,
+        spacing: { after: 100 },
+      }));
+      
+      // Name
+      signatureElements.push(new Paragraph({
+        children: [
+          new TextRun({
+            text: sig.name,
+            size: 20,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.JUSTIFY,
+        spacing: { after: 100 },
+      }));
+      
+      // Designation
+      signatureElements.push(new Paragraph({
+        children: [
+          new TextRun({
+            text: sig.designation,
+            size: 20,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.JUSTIFY,
+        spacing: { after: 100 },
+      }));
+      
+      // Label
+      signatureElements.push(new Paragraph({
+        children: [
+          new TextRun({
+            text: sig.label,
+            size: 20,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.JUSTIFY,
+        spacing: { after: 200 },
+      }));
+    });
+    
+    return signatureElements;
+  };
+
+  // Create header with image
+  const createHeaderWithImage = async () => {
+    try {
+      // Try to load header image
+      const response = await fetch('/header.png');
+      if (response.ok) {
+        const imageBuffer = await response.arrayBuffer();
+        return [
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: imageBuffer,
+                transformation: {
+                  width: 400,
+                  height: 100,
+                },
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          }),
+        ];
+      } else {
+        console.log("Header image not found, using text header");
+        return createTextHeader();
+      }
+    } catch (error) {
+      console.log("Error loading header image, using text header:", error);
+      return createTextHeader();
+    }
+  };
+
+  // Create text-based header as fallback
+  const createTextHeader = () => {
+    return [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "RV UNIVERSITY",
+            bold: true,
+            size: 24,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "Go, change the world",
+            size: 18,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "An initiative of RV Educational Institutions",
+            size: 16,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India",
+            size: 16,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: "+91 80 68199900 | www.rvu.edu.in",
+            size: 16,
+            font: "Arial",
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 300 },
+      }),
+    ];
+  };
+
+  // Create proper table structure
+  const createProperTable = () => {
+    if (!formData.tableHeaders || formData.tableHeaders.length === 0) {
+      return [];
+    }
+    
+    try {
+      const tableRows = [];
+      
+      // Header row
+      const headerRow = new DocxTableRow({
+        children: formData.tableHeaders.map(header => 
+          new DocxTableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: (header || " ").toString().replace(/[^\x20-\x7E]/g, ''),
+                    bold: true,
+                    size: 20,
+                    font: "Arial",
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+          })
+        ),
+      });
+      tableRows.push(headerRow);
+      
+      // Data rows
+      formData.tableRows.forEach(row => {
+        const dataRow = new DocxTableRow({
+          children: row.map(cell => 
+            new DocxTableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: (cell || "").toString().replace(/[^\x20-\x7E]/g, ''),
+                      size: 20,
+                      font: "Arial",
+                    }),
+                  ],
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+            })
+          ),
+        });
+        tableRows.push(dataRow);
+      });
+      
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Financial/Resource Implications Table:".replace(/[^\x20-\x7E]/g, ''),
+              bold: true,
+              size: 24,
+              font: "Arial",
+            }),
+          ],
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        }),
+        new DocxTable({
+          rows: tableRows,
+          width: {
+            size: 100,
+            type: WidthType.PERCENTAGE,
+          },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1 },
+            bottom: { style: BorderStyle.SINGLE, size: 1 },
+            left: { style: BorderStyle.SINGLE, size: 1 },
+            right: { style: BorderStyle.SINGLE, size: 1 },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+            insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+          },
+        }),
+      ];
+    } catch (error) {
+      console.error("Error creating table:", error);
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Financial/Resource Implications Table:".replace(/[^\x20-\x7E]/g, ''),
+              bold: true,
+              size: 24,
+              font: "Arial",
+            }),
+          ],
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Table data could not be formatted.",
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+        }),
+      ];
+    }
+  };
+
+  // Create signature grid layout
+  const createSignatureGrid = () => {
+    try {
+      // Create 2x2 signature table
+      const signatureTable = new DocxTable({
+        rows: [
+          // First row
+          new DocxTableRow({
+            children: [
+              // Left column
+              new DocxTableCell({
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "_________________",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Dr Phani Kumar Pullela".replace(/[^\x20-\x7E]/g, ''),
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Dean, Student Affairs",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "(Prepared by)",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                  }),
+                ],
+              }),
+              // Right column
+              new DocxTableCell({
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "_________________",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Mr Chandrasekhar KN".replace(/[^\x20-\x7E]/g, ''),
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Head Finance",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "(Approved by)",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                  }),
+                ],
+              }),
+            ],
+          }),
+          // Second row
+          new DocxTableRow({
+            children: [
+              // Left column
+              new DocxTableCell({
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "_________________",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Dr Sahana D Gowda".replace(/[^\x20-\x7E]/g, ''),
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Registrar - RV University",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "(Recommended by)",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                  }),
+                ],
+              }),
+              // Right column
+              new DocxTableCell({
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "_________________",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Prof (Dr) Dwarika Prasad Uniyal".replace(/[^\x20-\x7E]/g, ''),
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "Vice Chancellor (i/c)",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 100 },
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: "(Approved by)",
+                        size: 20,
+                        font: "Arial",
+                      }),
+                    ],
+                    alignment: AlignmentType.JUSTIFY,
+                    spacing: { after: 200 },
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        borders: {
+          top: { style: BorderStyle.NONE, size: 0 },
+          bottom: { style: BorderStyle.NONE, size: 0 },
+          left: { style: BorderStyle.NONE, size: 0 },
+          right: { style: BorderStyle.NONE, size: 0 },
+          insideHorizontal: { style: BorderStyle.NONE, size: 0 },
+          insideVertical: { style: BorderStyle.NONE, size: 0 },
+        },
+      });
+      
+      return [signatureTable];
+      
+    } catch (error) {
+      console.error("Error creating signature grid:", error);
+      
+      // Fallback to simple signatures
+      const signatures = [
+        { name: "Dr Phani Kumar Pullela", designation: "Dean, Student Affairs", label: "(Prepared by)" },
+        { name: "Mr Chandrasekhar KN", designation: "Head Finance", label: "(Approved by)" },
+        { name: "Dr Sahana D Gowda", designation: "Registrar - RV University", label: "(Recommended by)" },
+        { name: "Prof (Dr) Dwarika Prasad Uniyal", designation: "Vice Chancellor (i/c)", label: "(Approved by)" }
+      ];
+      
+      const signatureElements = [];
+      signatures.forEach((sig, index) => {
+        // Add spacing between signature groups
+        if (index === 2) {
+          signatureElements.push(new Paragraph({
+            children: [new TextRun({ text: " ", size: 20, font: "Arial" })],
+            spacing: { after: 200 },
+          }));
+        }
+        
+        // Signature line
+        signatureElements.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: "_________________",
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 100 },
+        }));
+        
+        // Name
+        signatureElements.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: sig.name,
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 100 },
+        }));
+        
+        // Designation
+        signatureElements.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: sig.designation,
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 100 },
+        }));
+        
+        // Label
+        signatureElements.push(new Paragraph({
+          children: [
+            new TextRun({
+              text: sig.label,
+              size: 20,
+              font: "Arial",
+            }),
+          ],
+          alignment: AlignmentType.JUSTIFY,
+          spacing: { after: 200 },
+        }));
+      });
+      
+      return signatureElements;
+    }
+  };
+
+  // Enhanced download function with multiple fallback methods
+  const downloadFile = async (filePath, fileName = null) => {
+    try {
+      const downloadUrl = `http://localhost:5000${filePath}`;
+      console.log("🔗 Download URL:", downloadUrl);
+      
+      // Ensure fileName has .docx extension
+      const finalFileName = fileName && fileName.endsWith('.docx') 
+        ? fileName 
+        : `${fileName || `NFA_${formData.subject.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}`}.docx`;
+      
+      console.log("📄 Final filename:", finalFileName);
+      
+      // Method 1: Try fetch and blob download with proper MIME type
+      try {
+        console.log("🔄 Fetching file from server...");
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Get the blob and ensure it's treated as a DOCX file
+        const blob = await response.blob();
+        console.log("📦 Blob received, size:", blob.size, "type:", blob.type);
+        
+        // Create a new blob with the correct MIME type for DOCX
+        const docxBlob = new Blob([blob], { 
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+        });
+        
+        // Create download URL
+        const url = window.URL.createObjectURL(docxBlob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = finalFileName;
+        link.style.display = 'none';
+        
+        // Add to DOM, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(url);
+        
+        console.log("✅ DOCX file downloaded successfully");
+        setSuccess("NFA document downloaded successfully as DOCX!");
+        return;
+      } catch (fetchError) {
+        console.warn("⚠️ Fetch download failed, trying direct link method:", fetchError);
+      }
+      
+      // Method 2: Try direct link download as fallback
+      try {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = finalFileName;
+        link.target = '_blank';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log("✅ Direct download initiated");
+        setSuccess("NFA document download initiated!");
+        return;
+      } catch (directError) {
+        console.warn("⚠️ Direct download failed, trying window.open method:", directError);
+      }
+      
+      // Method 3: Try window.open as last resort
+      try {
+        window.open(downloadUrl, '_blank');
+        console.log("✅ Window.open download initiated");
+        setSuccess("NFA document opened in new tab for download!");
+        return;
+      } catch (windowError) {
+        console.error("❌ All download methods failed:", windowError);
+        throw new Error("All download methods failed. Please try right-clicking the link and saving the file.");
+      }
+      
+    } catch (error) {
+      console.error("❌ Download file error:", error);
+      setError(`Download failed: ${error.message}. Please try right-clicking the link and saving manually.`);
+      throw error;
+    }
+  };
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
   // Function to process content for preview display with proper bullet formatting
   const processContentForPreview = (content) => {
@@ -204,9 +1193,78 @@ function NfaAutomationForm({ onNfaGenerated }) {
     
     console.log("🔍 formatNfaContent received:", content.substring(0, 200) + "...");
     
+<<<<<<< HEAD
     // The content from Python already includes the complete NFA structure
     // Just return it as-is since it's already properly formatted
     return content;
+=======
+    // The content from Python already includes the full NFA structure
+    // We just need to add the header section and return the content as-is
+    const formattedLines = [];
+    
+    // Add header section (matching your template)
+    formattedLines.push("RV UNIVERSITY");
+    formattedLines.push("Go, change the world");
+    formattedLines.push("An initiative of RV Educational Institutions");
+    formattedLines.push("");
+    formattedLines.push("RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India");
+    formattedLines.push("+91 80 68199900 | www.rvu.edu.in");
+    formattedLines.push("");
+    formattedLines.push(`Date: ${new Date().toLocaleDateString('en-GB')}`);
+    formattedLines.push("");
+    formattedLines.push("Note For Approval (NFA)");
+    formattedLines.push("");
+    
+    // Check if content already has a subject line (from AI edit)
+    if (content.toLowerCase().includes('subject:')) {
+      // Content already includes subject, process it to ensure proper bullet formatting
+      const processedContent = processContentForPreview(content);
+      formattedLines.push(processedContent);
+    } else {
+      // Add subject line from form data
+      formattedLines.push(`Subject: ${formData.subject}`);
+      formattedLines.push("");
+      const processedContent = processContentForPreview(content);
+      formattedLines.push(processedContent);
+    }
+    
+    // Add table if table data exists
+    if (formData.tableHeaders && formData.tableHeaders.length > 0 && formData.tableRows && formData.tableRows.length > 0) {
+      formattedLines.push("");
+      formattedLines.push("Financial/Resource Implications Table:");
+      formattedLines.push("");
+      
+      // Add table headers
+      const headerRow = formData.tableHeaders.join("\t");
+      formattedLines.push(headerRow);
+      
+      // Add table rows
+      formData.tableRows.forEach(row => {
+        const dataRow = row.join("\t");
+        formattedLines.push(dataRow);
+      });
+      
+      formattedLines.push("");
+      formattedLines.push("The above proposal is submitted for approval.");
+    }
+    
+    // Add signature section (matching your template)
+    formattedLines.push("");
+    formattedLines.push('_________________                    _________________');
+    formattedLines.push('Dr Phani Kumar Pullela              Mr Chandrasekhar KN');
+    formattedLines.push('Dean, Student Affairs                Head Finance');
+    formattedLines.push('(Prepared by)                        (Approved by)');
+    formattedLines.push('');
+    formattedLines.push('_________________                    _________________');
+    formattedLines.push('Dr Sahana D Gowda                    Prof (Dr) Dwarika Prasad Uniyal');
+    formattedLines.push('Registrar - RV University             Vice Chancellor (i/c)');
+    formattedLines.push('(Recommended by)                    (Approved by)');
+    
+    const result = formattedLines.join('\n');
+    console.log("🔍 formatNfaContent result:", result.substring(0, 200) + "...");
+    
+    return result;
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
   };
 
   // Replace the generateNfaWithAI function with this corrected version
@@ -245,11 +1303,20 @@ function NfaAutomationForm({ onNfaGenerated }) {
       if (response.data.success) {
         console.log("🔍 Setting state with response data:", {
           file: response.data.file,
+<<<<<<< HEAD
           nfaText: response.data.nfa_text?.substring(0, 200) + "...",
           hasNfaText: !!response.data.nfa_text
         });
         
         const nfaText = response.data.nfa_text || "NFA generated successfully";
+=======
+          nfaText: response.data.nfaText?.substring(0, 200) + "...",
+          hasNfaText: !!response.data.nfaText
+        });
+        
+        setDownloadLink(response.data.file);
+        const nfaText = response.data.nfaText || "NFA generated successfully";
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
         setGeneratedContent(nfaText);
         setEditedContent(nfaText);
         setCurrentNfaContent(nfaText);
@@ -497,6 +1564,7 @@ function NfaAutomationForm({ onNfaGenerated }) {
     }
   };
 
+<<<<<<< HEAD
   const calculateTotalAmount = () => {
     try {
       if (!formData.tableRows || formData.tableRows.length === 0) {
@@ -522,6 +1590,8 @@ function NfaAutomationForm({ onNfaGenerated }) {
     }
   };
 
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
   const validateForm = () => {
     const newErrors = {};
 
@@ -583,14 +1653,22 @@ function NfaAutomationForm({ onNfaGenerated }) {
       const response = await axios.post("http://localhost:5000/api/generate-nfa", requestData);
 
       if (response.data.success) {
+<<<<<<< HEAD
         setGeneratedContent(response.data.nfa_text || "NFA document generated successfully!");
         setEditedContent(response.data.nfa_text || "NFA document generated successfully!");
         setCurrentNfaContent(response.data.nfa_text || "NFA document generated successfully!");
         setDownloadLink(response.data.file);
+=======
+        setDownloadLink(response.data.file);
+        setGeneratedContent(response.data.nfaText || "NFA document generated successfully!");
+        setEditedContent(response.data.nfaText || "NFA document generated successfully!");
+        setCurrentNfaContent(response.data.nfaText || "NFA document generated successfully!");
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
         setSuccess("NFA document generated successfully!");
         setShowPreview(true);
         setActiveStep(3);
         
+<<<<<<< HEAD
         // Add NFA to history
         const nfaHistoryData = {
           subject: formData.subject,
@@ -606,6 +1684,8 @@ function NfaAutomationForm({ onNfaGenerated }) {
         
         addNfaToHistory(nfaHistoryData);
         
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
         // Initialize AI Editor with welcome message
         setAiChatMessages([
           {
@@ -672,10 +1752,17 @@ function NfaAutomationForm({ onNfaGenerated }) {
       tableHeaders: ["Item", "Quantity", "Unit Cost", "Total Cost"],
       tableRows: [["Laptops", "10", "₹50,000", "₹5,00,000"], ["Software Licenses", "10", "₹10,000", "₹1,00,000"]]
     });
+<<<<<<< HEAD
     setError("");
     setSuccess("");
     setActiveStep(0);
     setDownloadLink("");
+=======
+    setDownloadLink("");
+    setError("");
+    setSuccess("");
+    setActiveStep(0);
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     setErrors({});
     localStorage.removeItem("nfaFormData");
     setGeneratedContent("");
@@ -774,6 +1861,7 @@ function NfaAutomationForm({ onNfaGenerated }) {
     }
   };
 
+<<<<<<< HEAD
   // Handle NFA download using Python script
   const handleDownloadNFA = async () => {
     try {
@@ -987,11 +2075,67 @@ function NfaAutomationForm({ onNfaGenerated }) {
 
 
 
+=======
+  const handleDownloadEdited = async () => {
+    try {
+      console.log("🔄 Starting download request...", {
+        editedTextLength: currentNfaContent?.length,
+        subject: formData.subject,
+        summary: formData.summary,
+        nfaType: formData.nfaType
+      });
+
+      // Prepare table data as array of arrays (including headers as first row)
+      const tableData = [
+        formData.tableHeaders, // First row is headers
+        ...formData.tableRows  // Rest are data rows
+      ];
+
+      const response = await axios.post("http://localhost:5000/api/download-edited-nfa", {
+        editedText: currentNfaContent,
+        subject: formData.subject,
+        summary: formData.summary,
+        nfaType: formData.nfaType,
+        tableData: tableData
+      });
+
+      console.log("📥 Download response:", response.data);
+
+      if (response.data.success) {
+        // Download the edited document
+        const link = document.createElement('a');
+        link.href = `http://localhost:5000${response.data.file}`;
+        link.download = response.data.fileName || 'edited-nfa.docx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setSuccess("Edited NFA document downloaded successfully!");
+        console.log("✅ Download completed successfully");
+      } else {
+        console.error("❌ Download failed:", response.data.error);
+        setError(response.data.error || "Failed to download edited document");
+      }
+    } catch (error) {
+      console.error("❌ Error downloading edited document:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      setError(`Failed to download edited document: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
   const handleSuggestionClick = (suggestion) => {
     setAiInputText(suggestion);
   };
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
   return (
     <Container maxWidth="lg">
       {/* Stepper */}
@@ -1404,6 +2548,7 @@ function NfaAutomationForm({ onNfaGenerated }) {
             </Typography>
             
             {/* Preview Content */}
+<<<<<<< HEAD
             <Box sx={{ mb: 3 }}>
               <NfaPreview 
                 content={editedContent || generatedContent}
@@ -1413,6 +2558,27 @@ function NfaAutomationForm({ onNfaGenerated }) {
                 ]}
               />
             </Box>
+=======
+            <Paper sx={{ p: 3, mb: 3, minHeight: "400px", backgroundColor: "#fafafa" }}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                Preview of Generated NFA Document
+              </Typography>
+              <Box sx={{ 
+                backgroundColor: "white", 
+                p: 3, 
+                borderRadius: 2, 
+                border: "1px solid #e0e0e0",
+                fontFamily: "Arial, sans-serif",
+                whiteSpace: "pre-wrap",
+                maxHeight: "500px",
+                overflowY: "auto",
+                lineHeight: 1.6,
+                textAlign: "justify"
+              }}>
+                {formatNfaContent(editedContent || generatedContent)}
+              </Box>
+            </Paper>
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
             {/* Action Buttons */}
             <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
@@ -1459,7 +2625,10 @@ function NfaAutomationForm({ onNfaGenerated }) {
               >
                 Create Another NFA
               </Button>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
             </Box>
           </Box>
         )}
@@ -1645,9 +2814,14 @@ function NfaAutomationForm({ onNfaGenerated }) {
               <Button
                 variant="contained"
                 color="success"
+<<<<<<< HEAD
                 startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Download />}
                 onClick={handleDownloadNFA}
                 disabled={loading}
+=======
+                startIcon={<Download />}
+                onClick={handleDownloadEdited}
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
                 sx={{ 
                   borderRadius: "25px", 
                   px: 4, 

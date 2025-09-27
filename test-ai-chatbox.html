@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Chatbox Functionality</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Test AI Chatbox Functionality</h1>
+    <p>This test verifies that the AI chatbox properly handles user requests for editing NFA documents.</p>
+    
+    <div>
+        <button onclick="testSubjectChange()">Test Subject Change</button>
+        <button onclick="testContentEdit()">Test Content Edit</button>
+        <button onclick="testMultipleEdits()">Test Multiple Edits</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Results:</h3>
+        <div id="test-results" class="content-display">Click a test button to see the results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const testResultsDiv = document.getElementById('test-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        async function generateInitialNFA() {
+            // First generate an NFA
+            const requestData = {
+                subject: "Chess By Panchatantra",
+                summary: "Chess tournament organized by Panchatantra club on 5th September 2025 at RV University Campus. The event will feature competitive chess matches among students and faculty, promoting strategic thinking and community engagement through chess activities.",
+                nfaType: "reimbursement",
+                bulletsRequired: true,
+                tableData: [
+                    ["slno", "item", "unit", "total"],
+                    ["1", "prize", "2", "20"],
+                    ["2", "prize", "2", "20"],
+                    ["3", "prize", "2", "20"],
+                    ["Total", "", "", "60"]
+                ]
+            };
+            
+            const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            });
+            
+            const result = await response.json();
+            return result;
+        }
+        
+        async function testSubjectChange() {
+            try {
+                log("🔄 Testing subject change functionality...", 'info');
+                
+                // Generate initial NFA
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                console.log("📄 Original content:", originalContent.substring(0, 200) + "...");
+                
+                // Test subject change
+                const editRequest = {
+                    text: originalContent,
+                    prompt: "Subject: Chess By Panchatantra ,change that subject to Chess Event",
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                console.log("📤 Sending edit request:", editRequest);
+                
+                const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(editRequest),
+                });
+                
+                const editResult = await editResponse.json();
+                console.log("📥 Edit response:", editResult);
+                
+                if (editResult.success) {
+                    const editedContent = editResult.editedText;
+                    
+                    // Analyze the results
+                    const analysis = analyzeEditResults(originalContent, editedContent, "Subject Change Test");
+                    
+                    testResultsDiv.textContent = `Original Content:\n${originalContent}\n\n--- EDITED CONTENT ---\n\n${editedContent}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Check if subject was changed properly
+                    const hasChessEvent = editedContent.toLowerCase().includes('chess event');
+                    const hasOldSubject = editedContent.toLowerCase().includes('chess by panchatantra');
+                    
+                    if (hasChessEvent && !hasOldSubject) {
+                        log("🎉 PERFECT: Subject changed successfully from 'Chess By Panchatantra' to 'Chess Event'", 'success');
+                    } else if (hasChessEvent && hasOldSubject) {
+                        log("⚠️ PARTIAL: New subject added but old subject still present", 'warning');
+                    } else {
+                        log("❌ FAILED: Subject change did not work properly", 'error');
+                    }
+                    
+                } else {
+                    throw new Error(editResult.error || "Edit request failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing subject change: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testContentEdit() {
+            try {
+                log("🔄 Testing content edit functionality...", 'info');
+                
+                // Generate initial NFA
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                const originalContent = initialResult.nfaText;
+                
+                // Test content edit
+                const editRequest = {
+                    text: originalContent,
+                    prompt: "Add more details about the chess tournament prizes and awards",
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                const editResponse = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(editRequest),
+                });
+                
+                const editResult = await editResponse.json();
+                
+                if (editResult.success) {
+                    const editedContent = editResult.editedText;
+                    const analysis = analyzeEditResults(originalContent, editedContent, "Content Edit Test");
+                    
+                    testResultsDiv.textContent = `Original Content:\n${originalContent}\n\n--- EDITED CONTENT ---\n\n${editedContent}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Check if content was enhanced
+                    const hasMoreDetails = editedContent.toLowerCase().includes('prize') || editedContent.toLowerCase().includes('award');
+                    const contentLonger = editedContent.length > originalContent.length;
+                    
+                    if (hasMoreDetails && contentLonger) {
+                        log("✅ GOOD: Content was enhanced with more details", 'success');
+                    } else if (hasMoreDetails) {
+                        log("⚠️ PARTIAL: Some details added but content length similar", 'warning');
+                    } else {
+                        log("❌ FAILED: Content edit did not add requested details", 'error');
+                    }
+                    
+                } else {
+                    throw new Error(editResult.error || "Edit request failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing content edit: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testMultipleEdits() {
+            try {
+                log("🔄 Testing multiple edits functionality...", 'info');
+                
+                // Generate initial NFA
+                const initialResult = await generateInitialNFA();
+                if (!initialResult.success) {
+                    throw new Error("Failed to generate initial NFA");
+                }
+                
+                let currentContent = initialResult.nfaText;
+                let allResults = `Initial Content:\n${currentContent}\n\n`;
+                
+                // First edit: Change subject
+                const edit1Request = {
+                    text: currentContent,
+                    prompt: "change subject to Chess Championship",
+                    subject: "Chess By Panchatantra",
+                    summary: "Chess tournament organized by Panchatantra club",
+                    nfaType: "reimbursement",
+                    bulletsRequired: true,
+                    tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                };
+                
+                const edit1Response = await fetch('http://localhost:5000/api/edit-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(edit1Request),
+                });
+                
+                const edit1Result = await edit1Response.json();
+                
+                if (edit1Result.success) {
+                    currentContent = edit1Result.editedText;
+                    allResults += `After Edit 1 (Subject Change):\n${currentContent}\n\n`;
+                    
+                    // Second edit: Modify content
+                    const edit2Request = {
+                        text: currentContent,
+                        prompt: "make the event description more formal and professional",
+                        subject: "Chess Championship",
+                        summary: "Chess tournament organized by Panchatantra club",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "prize", "2", "20"]]
+                    };
+                    
+                    const edit2Response = await fetch('http://localhost:5000/api/edit-nfa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(edit2Request),
+                    });
+                    
+                    const edit2Result = await edit2Response.json();
+                    
+                    if (edit2Result.success) {
+                        const finalContent = edit2Result.editedText;
+                        allResults += `After Edit 2 (Content Modification):\n${finalContent}\n\n`;
+                        
+                        const analysis = analyzeEditResults(initialResult.nfaText, finalContent, "Multiple Edits Test");
+                        allResults += `--- ANALYSIS ---\n\n${analysis}`;
+                        
+                        testResultsDiv.textContent = allResults;
+                        
+                        // Check if both edits worked
+                        const hasChampionship = finalContent.toLowerCase().includes('championship');
+                        const isMoreFormal = finalContent.toLowerCase().includes('formal') || finalContent.toLowerCase().includes('professional');
+                        
+                        if (hasChampionship && isMoreFormal) {
+                            log("🎉 PERFECT: Multiple edits applied successfully", 'success');
+                        } else if (hasChampionship) {
+                            log("✅ GOOD: Subject changed, content may need more formal language", 'success');
+                        } else {
+                            log("⚠️ PARTIAL: Some edits applied but not all as expected", 'warning');
+                        }
+                        
+                    } else {
+                        throw new Error("Second edit failed");
+                    }
+                } else {
+                    throw new Error("First edit failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing multiple edits: ${error.message}`, 'error');
+                testResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function analyzeEditResults(original, edited, testName) {
+            const analysis = [];
+            const originalLines = original.split('\n').length;
+            const editedLines = edited.split('\n').length;
+            const originalLength = original.length;
+            const editedLength = edited.length;
+            
+            analysis.push(`=== ${testName} Analysis ===`);
+            analysis.push("");
+            analysis.push(`Original: ${originalLines} lines, ${originalLength} characters`);
+            analysis.push(`Edited: ${editedLines} lines, ${editedLength} characters`);
+            analysis.push(`Change: ${editedLength - originalLength} characters (${editedLength > originalLength ? '+' : ''}${((editedLength - originalLength) / originalLength * 100).toFixed(1)}%)`);
+            analysis.push("");
+            
+            // Check for subject changes
+            const originalSubject = original.match(/Subject:\s*([^\n]+)/i);
+            const editedSubject = edited.match(/Subject:\s*([^\n]+)/i);
+            
+            if (originalSubject && editedSubject) {
+                if (originalSubject[1].trim() !== editedSubject[1].trim()) {
+                    analysis.push(`✅ Subject changed: "${originalSubject[1].trim()}" → "${editedSubject[1].trim()}"`);
+                } else {
+                    analysis.push(`⚠️ Subject unchanged: "${originalSubject[1].trim()}"`);
+                }
+            }
+            
+            // Check for content changes
+            const hasChanges = original !== edited;
+            if (hasChanges) {
+                analysis.push("✅ Content was modified");
+            } else {
+                analysis.push("❌ No changes detected");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                log("🔄 Testing server health...", 'info');
+                fetch('http://localhost:5000/api/health')
+                    .then(response => response.json())
+                    .then(result => {
+                        log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ Health check failed: ${error.message}`, 'error');
+                    });
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

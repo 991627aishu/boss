@@ -7,7 +7,10 @@ A modern, responsive web application built with React and TailwindCSS for RV Uni
 - **QR Code Landing Page**: Clean, branded landing page with RV University logo
 - **Interactive Homepage**: 8 clickable committee/service boxes in a responsive grid layout
 - **Section Pages**: Individual pages for each committee with organized content cards
+<<<<<<< HEAD
 - **NFA Automation**: AI-powered NFA (No Further Action) document generation
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Modern UI/UX**: Elegant design with hover animations and smooth transitions
 - **University Branding**: Uses RV University colors and styling
@@ -22,7 +25,10 @@ A modern, responsive web application built with React and TailwindCSS for RV Uni
 6. **Equity Cell**
 7. **Anti-Ragging Committee**
 8. **Mentor-Mentee**
+<<<<<<< HEAD
 9. **NFA Automation** - AI-powered document generation
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 ## Getting Started
 
@@ -30,7 +36,10 @@ A modern, responsive web application built with React and TailwindCSS for RV Uni
 
 - Node.js (version 14 or higher)
 - npm or yarn
+<<<<<<< HEAD
 - Python 3.7+ (for NFA automation features)
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 ### Installation
 
@@ -42,6 +51,7 @@ A modern, responsive web application built with React and TailwindCSS for RV Uni
 npm install
 ```
 
+<<<<<<< HEAD
 4. Install Python dependencies (for NFA automation):
 
 ```bash
@@ -69,6 +79,17 @@ npm start
 
 The application will open in your browser at `http://localhost:3002`
 The backend API will be available at `http://localhost:5000`
+=======
+### Running the Application
+
+Start the development server:
+
+```bash
+npm start
+```
+
+The application will open in your browser at `http://localhost:3000`
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 ### Building for Production
 
@@ -85,6 +106,7 @@ src/
 ├── components/
 │   ├── LandingPage.js      # QR landing page
 │   ├── HomePage.js         # Main homepage with 8 sections
+<<<<<<< HEAD
 │   ├── SectionPage.js      # Individual section pages
 │   └── NfaAutomationForm.js # NFA automation form
 ├── App.js                  # Main app component with routing
@@ -97,6 +119,12 @@ backend/
 │   ├── generate_nfa_automation.py # AI-powered NFA generation
 │   └── requirements.txt   # Python dependencies
 └── generated_letters/     # Generated NFA documents
+=======
+│   └── SectionPage.js      # Individual section pages
+├── App.js                  # Main app component with routing
+├── index.js               # Entry point
+└── index.css              # Global styles and TailwindCSS
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 ```
 
 ## Technology Stack
@@ -104,6 +132,7 @@ backend/
 - **React 18**: Modern React with hooks
 - **React Router**: Client-side routing
 - **TailwindCSS**: Utility-first CSS framework
+<<<<<<< HEAD
 - **Express.js**: Backend API server
 - **Python**: AI-powered document generation
 - **OpenAI API**: AI text generation
@@ -117,6 +146,9 @@ backend/
 - Table data integration
 - Document editing capabilities
 - Download as Word documents
+=======
+- **Responsive Design**: Mobile-first approach
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 ## Customization
 
@@ -132,6 +164,7 @@ All section content is defined in `SectionPage.js` and can be easily modified to
 ### Logo
 Currently uses a placeholder logo. Replace the logo placeholder in `LandingPage.js` with the actual RV University logo.
 
+<<<<<<< HEAD
 ## API Endpoints
 
 - `GET /api/health` - Health check
@@ -149,6 +182,8 @@ If you encounter issues:
 3. **Port conflicts**: Change ports in `package.json` and `backend/server.js`
 4. **CORS issues**: Check backend CORS configuration
 
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 ## Future Enhancements
 
 - Backend API integration for form submissions
@@ -156,7 +191,10 @@ If you encounter issues:
 - Document upload/download functionality
 - Real-time notifications
 - Admin dashboard for content management
+<<<<<<< HEAD
 - Enhanced AI features for document generation
+=======
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
 
 ## Browser Support
 

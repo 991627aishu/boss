@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Detailed Content Generation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .content-display { 
+            white-space: pre-line; 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            line-height: 1.4;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 5px; 
+            cursor: pointer; 
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Test AI Detailed Content Generation</h1>
+    <p>This test verifies that the AI generates excellent, detailed content according to your critical requirements.</p>
+    
+    <div>
+        <button onclick="testHealth()">Test Server Health</button>
+        <button onclick="testDetailedGeneration()">Test Detailed AI Generation</button>
+        <button onclick="testMultipleScenarios()">Test Multiple Scenarios</button>
+        <button onclick="downloadDetailedNFA()">Download Detailed NFA</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="test-section">
+        <h3>Test Input Data:</h3>
+        <div id="input-data" class="content-display">
+Subject: Teacher's Day Celebration
+Summary: Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.
+NFA Type: advance
+Bullets Required: true
+
+Expected AI Output Structure:
+1. Subject line (no "Subject:" prefix)
+2. Request paragraph starting with "Request for approval regarding"
+3. 3 specific bullet points with • symbol
+4. Conclusion paragraph
+5. Signature block
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>AI Generated Content Analysis:</h3>
+        <div id="ai-analysis" class="content-display">Click "Test Detailed AI Generation" to see the analysis...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Download Test Results:</h3>
+        <div id="download-results" class="content-display">Click "Download Detailed NFA" to see download results...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const aiAnalysisDiv = document.getElementById('ai-analysis');
+        const downloadResultsDiv = document.getElementById('download-results');
+        
+        function log(message, type = 'info') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+        
+        function analyzeContent(content) {
+            const analysis = [];
+            
+            // Check structure requirements
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            // Check 1: Subject line (no "Subject:" prefix)
+            const hasSubjectPrefix = lines.some(line => line.startsWith('Subject:'));
+            if (hasSubjectPrefix) {
+                analysis.push("❌ FAIL: Content has 'Subject:' prefix - should be direct subject line");
+            } else {
+                analysis.push("✅ PASS: Subject line without prefix");
+            }
+            
+            // Check 2: Request paragraph
+            const hasRequestParagraph = content.includes('Request for approval regarding');
+            if (hasRequestParagraph) {
+                analysis.push("✅ PASS: Contains request paragraph starting with 'Request for approval regarding'");
+            } else {
+                analysis.push("❌ FAIL: Missing request paragraph with 'Request for approval regarding'");
+            }
+            
+            // Check 3: Bullet points
+            const bulletPoints = content.match(/•/g) || [];
+            if (bulletPoints.length >= 3) {
+                analysis.push(`✅ PASS: Contains ${bulletPoints.length} bullet points with • symbol`);
+            } else {
+                analysis.push(`❌ FAIL: Only ${bulletPoints.length} bullet points found, need at least 3`);
+            }
+            
+            // Check 4: Specific content
+            const hasSpecificDate = content.includes('5th September 2025') || content.includes('September 2025');
+            if (hasSpecificDate) {
+                analysis.push("✅ PASS: Contains specific date from summary");
+            } else {
+                analysis.push("❌ FAIL: Missing specific date from summary");
+            }
+            
+            const hasSpecificDetails = content.includes('cultural performances') || 
+                                     content.includes('recognition awards') || 
+                                     content.includes('luncheon') ||
+                                     content.includes('150 participants');
+            if (hasSpecificDetails) {
+                analysis.push("✅ PASS: Contains specific details from summary");
+            } else {
+                analysis.push("❌ FAIL: Missing specific details from summary");
+            }
+            
+            // Check 5: Conclusion
+            const hasConclusion = content.includes('The above proposal is submitted for approval');
+            if (hasConclusion) {
+                analysis.push("✅ PASS: Contains conclusion paragraph");
+            } else {
+                analysis.push("❌ FAIL: Missing conclusion paragraph");
+            }
+            
+            // Check 6: Generic content
+            const hasGenericContent = content.includes('NFA generated successfully') || 
+                                     content.includes('This proposal requires administrative approval');
+            if (hasGenericContent) {
+                analysis.push("❌ FAIL: Contains generic content instead of specific details");
+            } else {
+                analysis.push("✅ PASS: No generic content detected");
+            }
+            
+            return analysis.join('\n');
+        }
+        
+        async function testHealth() {
+            try {
+                log("🔄 Testing server health...", 'info');
+                const response = await fetch('http://localhost:5000/api/health');
+                const result = await response.json();
+                log(`✅ Health check: ${JSON.stringify(result)}`, 'success');
+            } catch (error) {
+                log(`❌ Health check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDetailedGeneration() {
+            try {
+                log("🔄 Testing detailed AI content generation...", 'info');
+                
+                const requestData = {
+                    subject: "Teacher's Day Celebration",
+                    summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                console.log("📤 Sending detailed generation request:", requestData);
+                
+                const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+                
+                const result = await response.json();
+                console.log("📥 Detailed generation response:", result);
+                
+                if (result.success) {
+                    const content = result.nfaText || "";
+                    const analysis = analyzeContent(content);
+                    
+                    aiAnalysisDiv.textContent = `Generated Content:\n\n${content}\n\n--- ANALYSIS ---\n\n${analysis}`;
+                    
+                    // Overall assessment
+                    const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                    const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                    
+                    if (failCount === 0) {
+                        log(`✅ AI Generation PERFECT: ${passCount} requirements met`, 'success');
+                    } else if (failCount <= 2) {
+                        log(`⚠️ AI Generation GOOD: ${passCount} passed, ${failCount} failed`, 'warning');
+                    } else {
+                        log(`❌ AI Generation NEEDS IMPROVEMENT: ${passCount} passed, ${failCount} failed`, 'error');
+                    }
+                    
+                } else {
+                    throw new Error(result.error || "AI generation failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error testing detailed generation: ${error.message}`, 'error');
+                aiAnalysisDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testMultipleScenarios() {
+            try {
+                log("🔄 Testing multiple AI generation scenarios...", 'info');
+                
+                const scenarios = [
+                    {
+                        name: "Teacher's Day Celebration",
+                        subject: "Teacher's Day Celebration",
+                        summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                        nfaType: "advance",
+                        bulletsRequired: true
+                    },
+                    {
+                        name: "Sports Tournament",
+                        subject: "Inter-College Sports Tournament",
+                        summary: "Inter-college sports tournament on 15th October 2025 featuring cricket, football, and basketball competitions with 20 participating colleges and prize distribution ceremony.",
+                        nfaType: "reimbursement",
+                        bulletsRequired: true
+                    },
+                    {
+                        name: "Workshop",
+                        subject: "Technical Workshop on AI",
+                        summary: "Technical workshop on Artificial Intelligence and Machine Learning on 20th November 2025 for 100 students with expert speakers and hands-on training sessions.",
+                        nfaType: "advance",
+                        bulletsRequired: false
+                    }
+                ];
+                
+                let allResults = "";
+                
+                for (const scenario of scenarios) {
+                    allResults += `\n--- ${scenario.name} ---\n`;
+                    
+                    const requestData = {
+                        subject: scenario.subject,
+                        summary: scenario.summary,
+                        nfaType: scenario.nfaType,
+                        bulletsRequired: scenario.bulletsRequired,
+                        tableData: [["slno", "item", "unit", "total"], ["1", "item", "1", "100"]]
+                    };
+                    
+                    try {
+                        const response = await fetch('http://localhost:5000/api/generate-nfa', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData),
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            const content = result.nfaText || "";
+                            const analysis = analyzeContent(content);
+                            allResults += `Generated Content:\n${content}\n\nAnalysis:\n${analysis}\n\n`;
+                        } else {
+                            allResults += `Error: ${result.error}\n\n`;
+                        }
+                    } catch (error) {
+                        allResults += `Error: ${error.message}\n\n`;
+                    }
+                }
+                
+                aiAnalysisDiv.textContent = allResults;
+                log("✅ Multiple scenarios tested", 'success');
+                
+            } catch (error) {
+                log(`❌ Error testing multiple scenarios: ${error.message}`, 'error');
+            }
+        }
+        
+        async function downloadDetailedNFA() {
+            try {
+                log("🔄 Downloading detailed NFA with AI content...", 'info');
+                
+                // First generate content
+                const generateRequest = {
+                    subject: "Teacher's Day Celebration",
+                    summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                    nfaType: "advance",
+                    bulletsRequired: true,
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const generateResponse = await fetch('http://localhost:5000/api/generate-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(generateRequest),
+                });
+                
+                const generateResult = await generateResponse.json();
+                
+                if (!generateResult.success) {
+                    throw new Error("Failed to generate content first");
+                }
+                
+                // Analyze the generated content
+                const analysis = analyzeContent(generateResult.nfaText);
+                const passCount = (analysis.match(/✅ PASS/g) || []).length;
+                const failCount = (analysis.match(/❌ FAIL/g) || []).length;
+                
+                // Now download with the generated content
+                const downloadRequest = {
+                    editedText: generateResult.nfaText,
+                    subject: "Teacher's Day Celebration",
+                    summary: "Teacher's Day Celebration on 5th September 2025 to honor and appreciate our dedicated teaching staff with cultural performances, recognition awards, and special luncheon for 150 participants.",
+                    nfaType: "advance",
+                    tableData: [
+                        ["slno", "item", "unit", "total"],
+                        ["1", "prize", "2", "20"],
+                        ["2", "prize", "2", "20"],
+                        ["3", "prize", "2", "20"],
+                        ["Total", "", "", "60"]
+                    ]
+                };
+                
+                const downloadResponse = await fetch('http://localhost:5000/api/download-edited-nfa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(downloadRequest),
+                });
+                
+                const downloadResult = await downloadResponse.json();
+                
+                if (downloadResult.success) {
+                    downloadResultsDiv.textContent = `✅ DOCX Generated Successfully!
+File: ${downloadResult.fileName}
+Path: ${downloadResult.filePath}
+
+Content Quality Analysis:
+- Passed: ${passCount} requirements
+- Failed: ${failCount} requirements
+
+Generated Content:
+${generateResult.nfaText}
+
+The DOCX contains the AI-generated content with proper structure and formatting.`;
+                    
+                    log(`✅ Download successful - Content quality: ${passCount}/${passCount + failCount} requirements met`, 'success');
+                    
+                    // Provide download link
+                    const downloadUrl = `http://localhost:5000${downloadResult.filePath}`;
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = downloadResult.fileName;
+                    link.textContent = `Download: ${downloadResult.fileName}`;
+                    link.style.display = 'block';
+                    link.style.marginTop = '10px';
+                    link.style.color = '#4caf50';
+                    link.style.textDecoration = 'underline';
+                    downloadResultsDiv.appendChild(link);
+                    
+                } else {
+                    throw new Error(downloadResult.error || "Download failed");
+                }
+                
+            } catch (error) {
+                log(`❌ Error downloading detailed NFA: ${error.message}`, 'error');
+                downloadResultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.onload = () => {
+            setTimeout(() => {
+                testHealth();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

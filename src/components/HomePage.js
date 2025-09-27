@@ -72,7 +72,11 @@ const HomePage = () => {
 
   const handleSectionClick = (sectionId) => {
     if (sectionId === 'note-for-approval') {
+<<<<<<< HEAD
       navigate('/nfa-landing');  // 👉 Go to NFA Landing Page first
+=======
+      navigate('/nfa-form');  // 👉 Directly go to NfaAutomationForm
+>>>>>>> 01c2e338bf6394697bda0e18a8ef44375a469344
     } else {
       navigate(`/section/${sectionId}`);
     }

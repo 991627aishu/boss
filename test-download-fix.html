@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFA Download Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 NFA Download Fix Test</h1>
+        <p>This test verifies that the NFA download to DOCX functionality is working correctly after the fixes.</p>
+
+        <div class="test-section">
+            <h3>1. Test Complete Download Flow</h3>
+            <button onclick="testCompleteDownloadFlow()">Test Complete Download Flow</button>
+            <div id="complete-flow-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test with Bullet Points</h3>
+            <button onclick="testDownloadWithBullets()">Test Download with Bullet Points</button>
+            <div id="bullets-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test with Table Data</h3>
+            <button onclick="testDownloadWithTable()">Test Download with Table Data</button>
+            <div id="table-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results Summary</h3>
+            <div id="summary-result">
+                <p>Run the tests above to see results...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        async function testCompleteDownloadFlow() {
+            const resultDiv = document.getElementById('complete-flow-result');
+            resultDiv.innerHTML = 'Testing complete download flow...';
+            
+            const testData = {
+                editedText: `Subject: Test NFA Document
+
+Request for approval regarding test document generation. This is a comprehensive test to verify the download functionality works correctly.
+
+• The test will verify document generation
+• Proper formatting and structure will be maintained
+• Download functionality will be tested thoroughly
+
+The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`,
+                subject: "Test NFA Document",
+                summary: "Test document for download verification",
+                nfaType: "reimbursement",
+                tableData: [
+                    ["Item", "Quantity", "Unit Cost", "Total Cost"],
+                    ["Test Item 1", "5", "₹100", "₹500"],
+                    ["Test Item 2", "3", "₹200", "₹600"]
+                ]
+            };
+            
+            try {
+                console.log('📤 Testing complete download flow...');
+                
+                const response = await fetch(`${API_BASE}/api/download-edited-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                console.log('📥 Download response:', data);
+                
+                if (data.success) {
+                    if (data.filePath && data.fileName) {
+                        resultDiv.innerHTML = `<div class="result success">✅ Complete download flow working!\n\nFile Path: ${data.filePath}\nFile Name: ${data.fileName}\nMessage: ${data.message}\n\nTesting file download...</div>`;
+                        
+                        // Test the actual file download
+                        await testFileDownload(data.filePath, data.fileName, resultDiv);
+                    } else {
+                        resultDiv.innerHTML = `<div class="result info">⚠️ Download endpoint responded but no file generated\n\nResponse: ${JSON.stringify(data, null, 2)}\n\nThis might be fallback mode - Python/DOCX generation unavailable</div>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Download flow failed\n\nError: ${data.error}\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Download flow test failed\n\nError: ${error.message}</div>`;
+                console.error('Download flow test error:', error);
+            }
+        }
+
+        async function testDownloadWithBullets() {
+            const resultDiv = document.getElementById('bullets-result');
+            resultDiv.innerHTML = 'Testing download with bullet points...';
+            
+            const testData = {
+                editedText: `Subject: Chess Tournament
+
+Request for approval regarding chess tournament on 5th September. This tournament will promote strategic thinking and cultural exchange.
+
+• The tournament will feature competitive matches with proper organization
+• Awards and recognition will be provided to participants
+• Proper administrative procedures will be followed for event coordination
+
+The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`,
+                subject: "Chess Tournament",
+                summary: "Chess tournament on 5th September",
+                nfaType: "reimbursement",
+                tableData: []
+            };
+            
+            try {
+                console.log('📤 Testing download with bullet points...');
+                
+                const response = await fetch(`${API_BASE}/api/download-edited-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                console.log('📥 Bullets download response:', data);
+                
+                if (data.success && data.filePath && data.fileName) {
+                    resultDiv.innerHTML = `<div class="result success">✅ Download with bullet points working!\n\nFile Path: ${data.filePath}\nFile Name: ${data.fileName}\nMessage: ${data.message}</div>`;
+                    
+                    // Test the actual file download
+                    await testFileDownload(data.filePath, data.fileName, resultDiv);
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Download with bullet points failed\n\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Bullet points test failed\n\nError: ${error.message}</div>`;
+                console.error('Bullet points test error:', error);
+            }
+        }
+
+        async function testDownloadWithTable() {
+            const resultDiv = document.getElementById('table-result');
+            resultDiv.innerHTML = 'Testing download with table data...';
+            
+            const testData = {
+                editedText: `Subject: Teacher's Day Celebration
+
+Request for approval regarding Teacher's Day celebration. This event will honor and appreciate educational contributions.
+
+• Recognition awards will be presented to outstanding teaching staff
+• A special luncheon will be organized for all participants
+• Cultural performances will be featured during the celebration
+
+The above proposal is submitted for approval, and the amount may kindly be reimbursed to the organizing committee after the event upon submission of the online report, receipts, and GST bills.`,
+                subject: "Teacher's Day Celebration",
+                summary: "Teacher's Day celebration event",
+                nfaType: "reimbursement",
+                tableData: [
+                    ["Item", "Quantity", "Unit Cost", "Total Cost"],
+                    ["Awards", "10", "₹500", "₹5,000"],
+                    ["Luncheon", "50", "₹200", "₹10,000"],
+                    ["Decorations", "1", "₹2,000", "₹2,000"],
+                    ["Total", "", "", "₹17,000"]
+                ]
+            };
+            
+            try {
+                console.log('📤 Testing download with table data...');
+                
+                const response = await fetch(`${API_BASE}/api/download-edited-nfa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                console.log('📥 Table download response:', data);
+                
+                if (data.success && data.filePath && data.fileName) {
+                    resultDiv.innerHTML = `<div class="result success">✅ Download with table data working!\n\nFile Path: ${data.filePath}\nFile Name: ${data.fileName}\nMessage: ${data.message}</div>`;
+                    
+                    // Test the actual file download
+                    await testFileDownload(data.filePath, data.fileName, resultDiv);
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Download with table data failed\n\nResponse: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Table data test failed\n\nError: ${error.message}</div>`;
+                console.error('Table data test error:', error);
+            }
+        }
+
+        async function testFileDownload(filePath, fileName, resultDiv) {
+            const downloadUrl = `${API_BASE}${filePath}`;
+            console.log('🔗 Testing file download from:', downloadUrl);
+            
+            try {
+                // Test if file exists
+                const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
+                
+                if (!headResponse.ok) {
+                    throw new Error(`File not found: ${headResponse.status} ${headResponse.statusText}`);
+                }
+                
+                resultDiv.innerHTML += `\n\n✅ File exists on server (${headResponse.status})\n`;
+                
+                // Try download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName || `test-download-${Date.now()}.docx`;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                resultDiv.innerHTML += `✅ Download initiated successfully!\n`;
+                
+            } catch (error) {
+                resultDiv.innerHTML += `\n\n❌ File download failed: ${error.message}\n`;
+                console.error('File download error:', error);
+            }
+        }
+
+        // Auto-run basic test on page load
+        window.onload = function() {
+            console.log('🔧 NFA Download Fix Test Page Loaded');
+            console.log('Click the buttons above to test the download functionality');
+        };
+    </script>
+</body>
+</html>
