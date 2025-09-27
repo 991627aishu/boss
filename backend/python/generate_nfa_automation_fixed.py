@@ -254,7 +254,7 @@ def create_proper_nfa_document(subject_line, body_text, closing_line, table_data
         else:
             print("⚠️ Header image not found, creating document without header", file=sys.stderr)
         
-        # Add date - right aligned (EXACTLY as in reference)
+        # Add date - right aligned (as shown in the image)
         date_para = doc.add_paragraph()
         date_run = date_para.add_run(f"Date: {datetime.now().strftime('%d-%m-%Y')}")
         date_para.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
@@ -320,19 +320,19 @@ def create_proper_nfa_document(subject_line, body_text, closing_line, table_data
         # Add empty line
         doc.add_paragraph()
         
-        # Add table if provided (EXACTLY as in reference with borders)
-        if table_data and len(table_data) > 0:
-            add_proper_table_to_document(doc, table_data)
-        
-        # Add empty line
-        doc.add_paragraph()
-        
-        # Add conclusion - justified (EXACTLY as in reference)
+        # Add conclusion BEFORE table - justified (as shown in the image)
         conclusion_para = doc.add_paragraph()
         conclusion_run = conclusion_para.add_run(clean_text_content(closing_line))
         conclusion_para.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
         conclusion_run.font.size = Pt(11)
         conclusion_run.font.name = 'Arial'
+        
+        # Add empty line
+        doc.add_paragraph()
+        
+        # Add table if provided (EXACTLY as in reference without borders)
+        if table_data and len(table_data) > 0:
+            add_proper_table_to_document(doc, table_data)
         
         # Add empty line
         doc.add_paragraph()
@@ -360,8 +360,8 @@ def add_proper_table_to_document(doc, table_data):
         # Create table
         table = doc.add_table(rows=len(table_data), cols=len(table_data[0]) if table_data else 0)
         
-        # Apply styling with borders (EXACTLY as in reference)
-        table.style = 'Table Grid'
+        # Apply styling without borders (as shown in the image)
+        # table.style = 'Table Grid'  # Removed borders to match image
         table.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         
         print(f"Created table with {len(table.rows)} rows and {len(table.columns)} columns", file=sys.stderr)

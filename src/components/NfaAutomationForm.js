@@ -32,6 +32,8 @@ import {
 } from "@mui/material";
 import { Download, Send, Add, Delete, Edit, Settings, CloudUpload, TableChart, FileUpload } from "@mui/icons-material";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import NfaPreview from "./NfaPreview";
+import { addNfaToHistory } from "../utils/nfaHistory";
 
 const steps = ['Fill Details', 'Configure Financial Table', 'Generate NFA with AI', 'Download'];
 
@@ -202,72 +204,9 @@ function NfaAutomationForm({ onNfaGenerated }) {
     
     console.log("🔍 formatNfaContent received:", content.substring(0, 200) + "...");
     
-    // The content from Python already includes the full NFA structure
-    // We just need to add the header section and return the content as-is
-    const formattedLines = [];
-    
-    // Add header section (matching your template)
-    formattedLines.push("RV UNIVERSITY");
-    formattedLines.push("Go, change the world");
-    formattedLines.push("An initiative of RV Educational Institutions");
-    formattedLines.push("");
-    formattedLines.push("RV Vidyaniketan, 8th Mile, Mysuru Road, Bengaluru, 560059 India");
-    formattedLines.push("+91 80 68199900 | www.rvu.edu.in");
-    formattedLines.push("");
-    formattedLines.push(`Date: ${new Date().toLocaleDateString('en-GB')}`);
-    formattedLines.push("");
-    formattedLines.push("Note For Approval (NFA)");
-    formattedLines.push("");
-    
-    // Check if content already has a subject line (from AI edit)
-    if (content.toLowerCase().includes('subject:')) {
-      // Content already includes subject, process it to ensure proper bullet formatting
-      const processedContent = processContentForPreview(content);
-      formattedLines.push(processedContent);
-    } else {
-      // Add subject line from form data
-      formattedLines.push(`Subject: ${formData.subject}`);
-      formattedLines.push("");
-      const processedContent = processContentForPreview(content);
-      formattedLines.push(processedContent);
-    }
-    
-    // Add table if table data exists
-    if (formData.tableHeaders && formData.tableHeaders.length > 0 && formData.tableRows && formData.tableRows.length > 0) {
-      formattedLines.push("");
-      formattedLines.push("Financial/Resource Implications Table:");
-      formattedLines.push("");
-      
-      // Add table headers
-      const headerRow = formData.tableHeaders.join("\t");
-      formattedLines.push(headerRow);
-      
-      // Add table rows
-      formData.tableRows.forEach(row => {
-        const dataRow = row.join("\t");
-        formattedLines.push(dataRow);
-      });
-      
-      formattedLines.push("");
-      formattedLines.push("The above proposal is submitted for approval.");
-    }
-    
-    // Add signature section (matching your template)
-    formattedLines.push("");
-    formattedLines.push('_________________                    _________________');
-    formattedLines.push('Dr Phani Kumar Pullela              Mr Chandrasekhar KN');
-    formattedLines.push('Dean, Student Affairs                Head Finance');
-    formattedLines.push('(Prepared by)                        (Approved by)');
-    formattedLines.push('');
-    formattedLines.push('_________________                    _________________');
-    formattedLines.push('Dr Sahana D Gowda                    Prof (Dr) Dwarika Prasad Uniyal');
-    formattedLines.push('Registrar - RV University             Vice Chancellor (i/c)');
-    formattedLines.push('(Recommended by)                    (Approved by)');
-    
-    const result = formattedLines.join('\n');
-    console.log("🔍 formatNfaContent result:", result.substring(0, 200) + "...");
-    
-    return result;
+    // The content from Python already includes the complete NFA structure
+    // Just return it as-is since it's already properly formatted
+    return content;
   };
 
   // Replace the generateNfaWithAI function with this corrected version
@@ -306,11 +245,11 @@ function NfaAutomationForm({ onNfaGenerated }) {
       if (response.data.success) {
         console.log("🔍 Setting state with response data:", {
           file: response.data.file,
-          nfaText: response.data.nfaText?.substring(0, 200) + "...",
-          hasNfaText: !!response.data.nfaText
+          nfaText: response.data.nfa_text?.substring(0, 200) + "...",
+          hasNfaText: !!response.data.nfa_text
         });
         
-        const nfaText = response.data.nfaText || "NFA generated successfully";
+        const nfaText = response.data.nfa_text || "NFA generated successfully";
         setGeneratedContent(nfaText);
         setEditedContent(nfaText);
         setCurrentNfaContent(nfaText);
@@ -558,6 +497,31 @@ function NfaAutomationForm({ onNfaGenerated }) {
     }
   };
 
+  const calculateTotalAmount = () => {
+    try {
+      if (!formData.tableRows || formData.tableRows.length === 0) {
+        return '₹0';
+      }
+      
+      // Find the last column index (assuming it's the total column)
+      const totalColumnIndex = formData.tableHeaders.length - 1;
+      
+      // Calculate sum of all values in the total column
+      let total = 0;
+      formData.tableRows.forEach(row => {
+        const value = row[totalColumnIndex];
+        if (value && !isNaN(parseFloat(value))) {
+          total += parseFloat(value);
+        }
+      });
+      
+      return `₹${total.toLocaleString('en-IN')}`;
+    } catch (error) {
+      console.error('Error calculating total amount:', error);
+      return '₹0';
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -619,13 +583,28 @@ function NfaAutomationForm({ onNfaGenerated }) {
       const response = await axios.post("http://localhost:5000/api/generate-nfa", requestData);
 
       if (response.data.success) {
-        setGeneratedContent(response.data.nfaText || "NFA document generated successfully!");
-        setEditedContent(response.data.nfaText || "NFA document generated successfully!");
-        setCurrentNfaContent(response.data.nfaText || "NFA document generated successfully!");
+        setGeneratedContent(response.data.nfa_text || "NFA document generated successfully!");
+        setEditedContent(response.data.nfa_text || "NFA document generated successfully!");
+        setCurrentNfaContent(response.data.nfa_text || "NFA document generated successfully!");
         setDownloadLink(response.data.file);
         setSuccess("NFA document generated successfully!");
         setShowPreview(true);
         setActiveStep(3);
+        
+        // Add NFA to history
+        const nfaHistoryData = {
+          subject: formData.subject,
+          type: formData.nfaType,
+          status: 'pending',
+          date: new Date().toISOString().split('T')[0],
+          amount: calculateTotalAmount(),
+          createdBy: 'Current User', // You can get this from user context
+          description: formData.summary.substring(0, 100) + (formData.summary.length > 100 ? '...' : ''),
+          filePath: response.data.file,
+          nfaText: response.data.nfa_text
+        };
+        
+        addNfaToHistory(nfaHistoryData);
         
         // Initialize AI Editor with welcome message
         setAiChatMessages([
@@ -1425,25 +1404,15 @@ function NfaAutomationForm({ onNfaGenerated }) {
             </Typography>
             
             {/* Preview Content */}
-            <Paper sx={{ p: 3, mb: 3, minHeight: "400px", backgroundColor: "#fafafa" }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
-                Preview of Generated NFA Document
-              </Typography>
-              <Box sx={{ 
-                backgroundColor: "white", 
-                p: 3, 
-                borderRadius: 2, 
-                border: "1px solid #e0e0e0",
-                fontFamily: "Arial, sans-serif",
-                whiteSpace: "pre-wrap",
-                maxHeight: "500px",
-                overflowY: "auto",
-                lineHeight: 1.6,
-                textAlign: "justify"
-              }}>
-                {formatNfaContent(editedContent || generatedContent)}
-              </Box>
-            </Paper>
+            <Box sx={{ mb: 3 }}>
+              <NfaPreview 
+                content={editedContent || generatedContent}
+                tableData={[
+                  formData.tableHeaders,
+                  ...formData.tableRows
+                ]}
+              />
+            </Box>
 
             {/* Action Buttons */}
             <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
